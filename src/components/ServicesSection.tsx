@@ -2,10 +2,16 @@
 
 import { PromoPackageCard } from "@/components/PromoPackageCard";
 import { ServiceCard } from "@/components/ServiceCard";
-import { promoPackages, services } from "@/lib/data";
+import { Service, promoPackages, services } from "@/lib/data";
 import { useState } from "react";
 
-export default function ServicesSection() {
+interface ServicesSectionProps {
+  scrollToBooking?: () => void;
+}
+
+export default function ServicesSection({
+  scrollToBooking,
+}: ServicesSectionProps) {
   const [activeTab, setActiveTab] = useState("services");
 
   const handleTabChange = (value: string) => {
@@ -15,12 +21,14 @@ export default function ServicesSection() {
   const handlePackageSelect = () => {
     // Logique pour sélectionner un forfait
     console.log("Package selected");
+    if (scrollToBooking) scrollToBooking();
   };
 
   // Fonction pour sélectionner un service
   const selectService = (service: Service) => {
     // Logique pour sélectionner un service
     console.log("Service selected", service);
+    if (scrollToBooking) scrollToBooking();
   };
 
   // Fonction pour sélectionner un forfait promotionnel
@@ -29,7 +37,8 @@ export default function ServicesSection() {
     option: { name: string; price: string }
   ) => {
     // Logique pour sélectionner un forfait promotionnel
-    console.log("Promo package selected", packageId, option);
+    console.log("Promo package selected", { packageId, option });
+    if (scrollToBooking) scrollToBooking();
   };
 
   return (

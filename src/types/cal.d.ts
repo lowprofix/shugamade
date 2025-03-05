@@ -2,7 +2,7 @@
 interface CalConfig {
   layout?: string;
   theme?: string;
-  hideEventTypeDetails?: boolean | string;
+  hideEventTypeDetails?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }

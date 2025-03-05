@@ -1,5 +1,6 @@
 "use client";
 
+import { Star } from "@/components/Star";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -11,10 +12,23 @@ export default function AboutSection({ scrollToBooking }: AboutSectionProps) {
   return (
     <section
       id="about"
-      className="py-16 bg-gradient-to-b from-white to-gray-50"
+      className="py-16 bg-gradient-to-b from-white to-gray-50 relative"
     >
+      {/* Étoiles décoratives */}
+      <div className="absolute top-10 left-10 hidden md:block">
+        <Star size={70} rotation={-5} />
+      </div>
+      <div className="absolute bottom-20 right-10 hidden md:block">
+        <Star size={50} rotation={15} />
+      </div>
+
       <div className="container px-4 mx-auto">
-        <div className="mx-auto mb-12 max-w-4xl text-center">
+        <div className="mx-auto mb-12 max-w-4xl text-center relative">
+          {/* Étoile au-dessus du titre */}
+          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
+            <Star size={40} rotation={10} />
+          </div>
+
           <h2 className="mb-6 text-3xl md:text-4xl">
             Notre approche{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gradient-start to-brand-gradient-end">
@@ -22,7 +36,12 @@ export default function AboutSection({ scrollToBooking }: AboutSectionProps) {
             </span>
           </h2>
 
-          <Card className="border-0 shadow-lg">
+          <Card className="border-0 shadow-lg relative">
+            {/* Étoile en bas à droite de la carte */}
+            <div className="absolute -bottom-5 -right-5">
+              <Star size={45} rotation={-10} />
+            </div>
+
             <CardContent className="p-8">
               <div className="max-w-none prose prose-lg">
                 <p className="mb-4 leading-relaxed text-gray-700">

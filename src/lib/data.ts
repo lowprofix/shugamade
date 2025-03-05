@@ -182,5 +182,6 @@ export const kitItems = [
 export const contactInfo = {
   phone: "+242 06 536 67 16",
   email: "contact@shugamade.com",
-  address: "Institut ShugaMade, Rue Bangalas, Poto-Poto, Brazzaville, Congo",
+  address:
+    "Institut ShugaMade, 119 Rue Bangalas, Poto-Poto, Brazzaville, Congo",
 };

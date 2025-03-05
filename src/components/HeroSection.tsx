@@ -15,13 +15,13 @@ export default function HeroSection({ scrollToSection }: HeroSectionProps) {
         <div className="flex flex-col items-center md:flex-row">
           <div className="mb-10 md:w-1/2 md:mb-0">
             <h1 className="mb-4 text-4xl font-light text-gray-800 md:text-5xl">
-              <span className="text-brand-pink-dark">Retrouvez</span> la{" "}
-              <span className="text-brand-blue-dark">densité</span> de vos
-              cheveux
+              <span className="text-brand-pink-dark">Ta beauté</span>{" "}
+              <span className="text-brand-blue-dark">capillaire</span>, notre
+              expertise
             </h1>
             <p className="mb-8 text-lg text-gray-600">
-              Traitement naturel pour l'alopécie de traction par des experts du
-              soin capillaire
+              Traitement naturel pour tout type d'alopécie de traction par des
+              experts du soin capillaire
             </p>
             <Button
               onClick={() => scrollToSection("booking")}

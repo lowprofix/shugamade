@@ -1,5 +1,6 @@
 "use client";
 
+import AboutSection from "@/components/AboutSection";
 import BookingSection from "@/components/BookingSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
@@ -35,7 +36,7 @@ export default function ShugaMadeLandingPage() {
       { threshold: 0.5 }
     );
 
-    const sections = ["home", "services", "testimonials", "booking"];
+    const sections = ["home", "about", "services", "testimonials", "booking"];
     sections.forEach((section) => {
       const element = document.getElementById(section);
       if (element) observer.observe(element);
@@ -59,6 +60,9 @@ export default function ShugaMadeLandingPage() {
 
       {/* Hero Section */}
       <HeroSection scrollToSection={scrollToSection} />
+
+      {/* About Section */}
+      <AboutSection scrollToBooking={() => scrollToSection("booking")} />
 
       {/* Services Section */}
       <ServicesSection scrollToBooking={() => scrollToSection("booking")} />

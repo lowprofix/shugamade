@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Shugamade",
   description: "Spécialiste des traitement capillaire naturel",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

@@ -2,10 +2,10 @@
 module.exports = {
   darkMode: ["class"],
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
   ],
   theme: {
     container: {
@@ -19,17 +19,17 @@ module.exports = {
       colors: {
         // Palette de couleurs basée sur le logo (du rose au bleu)
         brand: {
-          pink: "#E94CA1",      // Rose principal
+          pink: "#E94CA1", // Rose principal
           "pink-light": "#FFC8E8", // Rose clair
           "pink-dark": "#B82C79", // Rose foncé
-          
-          blue: "#23C6C8",      // Bleu principal
+
+          blue: "#23C6C8", // Bleu principal
           "blue-light": "#9AEEF0", // Bleu clair
           "blue-dark": "#129CA0", // Bleu foncé
-          
+
           gradient: {
-            start: "#E94CA1",   // Rose (début du dégradé)
-            end: "#23C6C8"      // Bleu (fin du dégradé)
+            start: "#E94CA1", // Rose (début du dégradé)
+            end: "#23C6C8", // Bleu (fin du dégradé)
           },
         },
         border: "hsl(var(--border))",
@@ -80,12 +80,17 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "spin-slow": "spin-slow 8s linear infinite",
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+};

@@ -1,8 +1,8 @@
 "use client";
 
-import { Star } from "@/components/Star";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Sparkles } from "lucide-react";
 
 interface AboutSectionProps {
   scrollToBooking?: () => void;
@@ -12,36 +12,39 @@ export default function AboutSection({ scrollToBooking }: AboutSectionProps) {
   return (
     <section
       id="about"
-      className="py-16 bg-gradient-to-b from-white to-gray-50 relative"
+      className="py-16 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden"
     >
       {/* Étoiles décoratives */}
-      <div className="absolute top-10 left-10 hidden md:block">
-        <Star size={70} rotation={-5} />
+      <div className="absolute top-12 left-1/4 text-brand-pink-dark opacity-30 transform -rotate-12">
+        <Sparkles size={32} />
       </div>
-      <div className="absolute bottom-20 right-10 hidden md:block">
-        <Star size={50} rotation={15} />
+      <div className="absolute bottom-1/3 right-1/4 text-brand-teal opacity-20 transform rotate-12">
+        <Sparkles size={24} />
       </div>
 
       <div className="container px-4 mx-auto">
         <div className="mx-auto mb-12 max-w-4xl text-center relative">
-          {/* Étoile au-dessus du titre */}
-          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
-            <Star size={40} rotation={10} />
+          {/* Étoile principale près du titre */}
+          <div className="absolute -top-2 right-[calc(50%-120px)] text-brand-pink-dark animate-pulse">
+            <Sparkles size={28} />
           </div>
 
-          <h2 className="mb-6 text-3xl md:text-4xl">
+          <h2 className="mb-6 text-3xl md:text-4xl font-bold relative inline-block">
             Notre approche{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gradient-start to-brand-gradient-end">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gradient-start to-brand-gradient-end relative">
               personnalisée
+              {/* Petite étoile décorative */}
+              <svg
+                className="absolute -top-4 -right-6 w-5 h-5 text-brand-pink-dark animate-spin-slow"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+              </svg>
             </span>
           </h2>
 
-          <Card className="border-0 shadow-lg relative">
-            {/* Étoile en bas à droite de la carte */}
-            <div className="absolute -bottom-5 -right-5">
-              <Star size={45} rotation={-10} />
-            </div>
-
+          <Card className="border-0 shadow-lg">
             <CardContent className="p-8">
               <div className="max-w-none prose prose-lg">
                 <p className="mb-4 leading-relaxed text-gray-700">
@@ -69,7 +72,7 @@ export default function AboutSection({ scrollToBooking }: AboutSectionProps) {
                 <div className="mt-8 text-center">
                   <Button
                     onClick={scrollToBooking}
-                    className="px-6 py-3 text-white rounded-full bg-brand hover:bg-brand/90"
+                    className="px-6 py-3 text-white bg-brand hover:bg-brand/90 rounded-full"
                   >
                     Prenez rendez-vous dès aujourd'hui
                   </Button>

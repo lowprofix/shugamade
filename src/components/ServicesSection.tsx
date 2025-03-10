@@ -2,7 +2,7 @@
 
 import { PromoPackageCard } from "@/components/PromoPackageCard";
 import { ServiceCard } from "@/components/ServiceCard";
-import { Star } from "@/components/Star";
+
 import { Service, promoPackages, services } from "@/lib/data";
 import { useState } from "react";
 
@@ -45,19 +45,13 @@ export default function ServicesSection({
   return (
     <section id="services" className="py-12 bg-white relative">
       {/* Étoiles décoratives */}
-      <div className="absolute top-10 left-10 hidden md:block">
-        <Star size={60} rotation={-10} />
-      </div>
-      <div className="absolute bottom-20 right-10 hidden md:block">
-        <Star size={70} rotation={5} />
-      </div>
+      <div className="absolute top-10 left-10 hidden md:block"></div>
+      <div className="absolute bottom-20 right-10 hidden md:block"></div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 relative">
           {/* Étoile au-dessus du titre */}
-          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
-            <Star size={40} rotation={15} />
-          </div>
+          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2"></div>
 
           <h2 className="text-3xl font-light text-gray-800">
             <span className="text-teal-400">Nos</span>{" "}

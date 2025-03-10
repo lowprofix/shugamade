@@ -12,6 +12,8 @@ export interface Service {
   isPromo?: boolean;
   color?: "teal" | "pink" | "brand";
   includes?: string[];
+  eventTypeId?: number;
+  durationMinutes?: number;
 }
 
 export interface Testimonial {

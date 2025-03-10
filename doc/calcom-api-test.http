@@ -1,0 +1,47 @@
+@baseUrl = https://api.cal.com
+@apiKey = cal_live_0833cbfc001011b7933c4e305299a5be
+
+### 1. Vérifier la santé de l'API (ne nécessite pas d'authentification)
+GET {{baseUrl}}/v2/health
+Content-Type: application/json
+
+### 2. Obtenir les informations de l'utilisateur actuel
+GET {{baseUrl}}/v2/me
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+### 3. Lister tous les événements
+GET {{baseUrl}}/v2/event-types
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+### 4. Lister les réservations
+GET {{baseUrl}}/v2/bookings
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+### 5. Lister les webhooks
+GET {{baseUrl}}/v2/webhooks
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+### 6. Tester l'API GraphQL
+POST {{baseUrl}}/graphql
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+### 8. Obtenir les créneaux disponibles (avec options avancées)
+GET {{baseUrl}}/v2/slots
+    ?eventTypeId=1953114
+    &startTime=2025-03-11T00:00:00Z
+    &endTime=2025-03-11T23:59:59Z
+    &timeZone=Europe/Paris
+    &duration=30
+    &usernameList=john,jane
+    &teamId=2
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "query": "query { viewer { username email } }"
+}

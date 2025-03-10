@@ -11,7 +11,7 @@ Content-Type: application/json
 Authorization: Bearer {{apiKey}}
 
 ### 3. Lister tous les événements
-GET {{baseUrl}}/v2/event-types
+GET {{baseUrl}}/v2/event-types 
 Content-Type: application/json
 Authorization: Bearer {{apiKey}}
 

@@ -42,8 +42,11 @@ export default function BookingSection({ services }: BookingSectionProps) {
       // Initialiser Cal.com
       setTimeout(() => {
         initializeCalApi();
+        setIsLoading(false);
       }, 100);
 
+      // Commenté temporairement en raison de l'erreur 403
+      /* 
       // Optionnel : Récupérer les créneaux disponibles via l'API
       if (service.eventTypeId) {
         const today = new Date();
@@ -66,12 +69,10 @@ export default function BookingSection({ services }: BookingSectionProps) {
 
         setAvailableSlots(response.data.slots || []);
       }
+      */
     } catch (err) {
-      console.error("Erreur lors de la récupération des créneaux:", err);
-      setError(
-        "Impossible de charger les créneaux disponibles. Veuillez réessayer."
-      );
-    } finally {
+      console.error("Erreur lors de l'initialisation du calendrier:", err);
+      setError("Impossible de charger le calendrier. Veuillez réessayer.");
       setIsLoading(false);
     }
   };
@@ -208,8 +209,6 @@ export default function BookingSection({ services }: BookingSectionProps) {
                         overflow: "scroll",
                       }}
                       config={{
-                        ...DEFAULT_CAL_CONFIG,
-                        hideEventTypeDetails: "false",
                         layout: "month_view",
                         primaryColor: "#2dd4bf",
                         brandColor: "#f472b6",

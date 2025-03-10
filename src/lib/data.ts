@@ -131,7 +131,10 @@ export const promoPackages = [
       { name: "Tempes", price: "135 000 FCFA" },
       { name: "Tête entière", price: "175 000 FCFA" },
     ],
-    benefits: ["Kit SHUGAMADE offert (valeur 22 500 FCFA)"],
+    benefits: [
+      "Diagnostic capillaire offert",
+      "Kit SHUGAMADE offert (valeur 22 500 FCFA)",
+    ],
   },
   {
     id: 2,
@@ -141,7 +144,10 @@ export const promoPackages = [
       { name: "Tempes", price: "190 000 FCFA" },
       { name: "Tête entière", price: "250 000 FCFA" },
     ],
-    benefits: ["Kit SHUGAMADE offert (valeur 22 500 FCFA)"],
+    benefits: [
+      "Diagnostic capillaire offert",
+      "Kit SHUGAMADE offert (valeur 22 500 FCFA)",
+    ],
   },
 ];
 
@@ -173,6 +179,7 @@ export const testimonials: Testimonial[] = [
  * Contenu du kit offert
  */
 export const kitItems = [
+  "Diagnostic capillaire",
   "Spray Coup de pep's",
   "Sérum Coup de pousse",
   "Derma roller professionnel",

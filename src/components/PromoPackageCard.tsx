@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ChevronRight, Star } from "lucide-react";
 
-interface PackageOption {
+export interface PackageOption {
   name: string;
   price: string;
   sessions: number;
@@ -14,7 +14,7 @@ interface PromoPackageCardProps {
   options: PackageOption[];
   benefits: string[];
   isRecommended?: boolean;
-  color?: "teal" | "pink";
+  color?: "teal" | "pink" | "brand";
   onSelect: (packageId: number, option: PackageOption) => void;
 }
 
@@ -30,14 +30,22 @@ export function PromoPackageCard({
   const colorClass =
     color === "teal"
       ? "from-teal-50 to-white border-teal-100"
-      : "from-pink-50 to-white border-pink-100";
+      : color === "pink"
+      ? "from-pink-50 to-white border-pink-100"
+      : "from-gray-50 to-white border-gray-100";
 
-  const accentColor = color === "teal" ? "text-teal-500" : "text-pink-500";
+  const accentColor =
+    color === "teal"
+      ? "text-teal-500"
+      : color === "pink"
+      ? "text-pink-500"
+      : "text-gray-500";
 
   return (
     <Card
       className={`bg-gradient-to-br ${colorClass} overflow-hidden shadow relative border-2 ${
-        isRecommended ? "border-teal-300" : ""}`}
+        isRecommended ? "border-teal-300" : ""
+      }`}
     >
       {isRecommended && (
         <div className="absolute top-0 right-0 px-3 py-1 text-xs font-medium text-white bg-teal-400 rounded-bl">

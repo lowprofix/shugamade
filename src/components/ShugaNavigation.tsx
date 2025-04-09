@@ -71,6 +71,28 @@ export default function ShugaNavigation({
               Témoignages
             </Button>
             <Button
+              onClick={() => scrollToSection("afterSession")}
+              variant="ghost"
+              className={`${
+                activeSection === "afterSession"
+                  ? "text-brand-pink-dark"
+                  : "text-gray-600 hover:text-brand-pink-dark"
+              }`}
+            >
+              Conseils
+            </Button>
+            <Button
+              onClick={() => scrollToSection("bookingConditions")}
+              variant="ghost"
+              className={`${
+                activeSection === "bookingConditions"
+                  ? "text-brand-pink-dark"
+                  : "text-gray-600 hover:text-brand-pink-dark"
+              }`}
+            >
+              Conditions
+            </Button>
+            <Button
               onClick={() => scrollToSection("booking")}
               className="bg-gradient-to-r from-brand-gradient-start to-brand-gradient-end text-white hover:shadow-md"
               size="rounded"
@@ -143,6 +165,26 @@ export default function ShugaNavigation({
               className="justify-start w-full text-left px-3 py-2 text-gray-600 hover:bg-brand-gradient-start/10 hover:text-brand-pink-dark rounded-md"
             >
               Témoignages
+            </Button>
+            <Button
+              onClick={() => {
+                scrollToSection("afterSession");
+                setMobileMenuOpen(false);
+              }}
+              variant="ghost"
+              className="justify-start w-full text-left px-3 py-2 text-gray-600 hover:bg-brand-gradient-start/10 hover:text-brand-pink-dark rounded-md"
+            >
+              Conseils
+            </Button>
+            <Button
+              onClick={() => {
+                scrollToSection("bookingConditions");
+                setMobileMenuOpen(false);
+              }}
+              variant="ghost"
+              className="justify-start w-full text-left px-3 py-2 text-gray-600 hover:bg-brand-gradient-start/10 hover:text-brand-pink-dark rounded-md"
+            >
+              Conditions
             </Button>
             <Button
               onClick={() => {

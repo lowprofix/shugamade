@@ -24,6 +24,15 @@ export interface Testimonial {
   image?: string;
 }
 
+export interface PromoPackage {
+  id: number;
+  name: string;
+  isRecommended?: boolean;
+  color: "teal" | "pink" | "brand";
+  options: { name: string; price: string; sessions: number }[];
+  benefits: string[];
+}
+
 /**
  * Données pour les services proposés
  */
@@ -41,6 +50,51 @@ export const services: Service[] = [
       "Analyse du cuir chevelu",
       "Évaluation de la densité capillaire",
       "Recommandations personnalisées",
+    ],
+  },
+  {
+    id: 10,
+    name: "Massage crânien",
+    price: "5 000 FCFA",
+    duration: "20 min",
+    calLink: "mbote-bio-oabi4t/massage-cranien",
+    description:
+      "Massage relaxant du cuir chevelu pour stimuler la circulation sanguine et favoriser la santé capillaire.",
+    color: "brand",
+    includes: [
+      "Massage du cuir chevelu",
+      "Techniques de relaxation",
+      "Application d'huiles essentielles",
+    ],
+  },
+  {
+    id: 8,
+    name: "Machine électrothérapie",
+    price: "10 000 FCFA",
+    duration: "30 min",
+    calLink: "mbote-bio-oabi4t/machine-electrotherapie",
+    description:
+      "Traitement par électrothérapie pour stimuler la circulation sanguine et favoriser la santé du cuir chevelu.",
+    color: "pink",
+    includes: [
+      "Préparation du cuir chevelu",
+      "Traitement par électrothérapie",
+      "Application de sérums naturels",
+    ],
+  },
+  {
+    id: 9,
+    name: "Machine luminothérapie",
+    price: "10 000 FCFA",
+    duration: "30 min",
+    calLink: "mbote-bio-oabi4t/machine-luminotherapie",
+    description:
+      "Traitement par luminothérapie pour activer les cellules du cuir chevelu et favoriser la repousse.",
+    color: "teal",
+    includes: [
+      "Préparation du cuir chevelu",
+      "Traitement par luminothérapie",
+      "Application de sérums naturels",
     ],
   },
   {
@@ -121,15 +175,15 @@ export const promoServices: Service[] = [
 /**
  * Données pour les forfaits regroupés
  */
-export const promoPackages = [
+export const promoPackages: PromoPackage[] = [
   {
     id: 1,
     name: "Promo 4 séances",
     isRecommended: true,
     color: "pink",
     options: [
-      { name: "Tempes", price: "135 000 FCFA" },
-      { name: "Tête entière", price: "175 000 FCFA" },
+      { name: "Tempes", price: "135 000 FCFA", sessions: 4 },
+      { name: "Tête entière", price: "175 000 FCFA", sessions: 4 },
     ],
     benefits: [
       "Diagnostic capillaire offert",
@@ -141,8 +195,8 @@ export const promoPackages = [
     name: "Promo 6 séances",
     color: "teal",
     options: [
-      { name: "Tempes", price: "190 000 FCFA" },
-      { name: "Tête entière", price: "250 000 FCFA" },
+      { name: "Tempes", price: "190 000 FCFA", sessions: 6 },
+      { name: "Tête entière", price: "250 000 FCFA", sessions: 6 },
     ],
     benefits: [
       "Diagnostic capillaire offert",
@@ -193,4 +247,51 @@ export const contactInfo = {
   email: "contact@shugamade.com",
   address:
     "Institut ShugaMade, 119 Rue Bangalas, Poto-Poto, Brazzaville, Congo",
+};
+
+/**
+ * Recommandations pour les traitements
+ */
+export const treatmentRecommendations = {
+  sessionFrequency: "Il est recommandé de réaliser 4 à 6 séances (1 séance toutes les deux semaines pendant 2 à 3 mois). Des séances d'entretien peuvent être proposées pour maintenir les résultats.",
+  kitContents: "Kit SHUGAMADE offert: Spray Coup de pep's, sérum Coup de pousse, derma roller",
+};
+
+/**
+ * Conseils post-séance et suivi
+ */
+export const postSessionAdvice = {
+  homecare: [
+    "Ne pas laver les cheveux pendant 24 à 48 heures pour laisser agir les actifs.",
+    "Éviter les coiffures serrées et produits agressifs pendant au moins 5 jours.",
+    "Appliquer le sérum Coup de Pousse et le spray Coup de Pep's 24h après et 3 fois par semaine pour maximiser la repousse.",
+    "Masser le cuir chevelu quotidiennement pour stimuler la circulation.",
+    "Protéger le cuir chevelu du soleil et éviter les fortes chaleurs."
+  ]
+};
+
+/**
+ * Recommandations après la séance
+ */
+export const afterSessionRecommendations = {
+  precautions: [
+    "Ne pas toucher la zone traitée avec des mains non lavées.",
+    "Éviter l'eau et les produits capillaires pendant 24 heures après la séance.",
+    "Ne pas exposer la zone au soleil direct ou à la chaleur excessive (sèche-cheveux chaud, sauna, etc.) pendant 48 heures.",
+    "Éviter la transpiration excessive (sport intensif, hammam, etc.) pendant 48 heures.",
+    "Ne pas appliquer d'huiles essentielles, d'alcool ou de produits agressifs sur la zone traitée avant 72 heures.",
+    "Hydrater la zone traitée avec un produit recommandé si besoin."
+  ]
+};
+
+/**
+ * Conditions de réservation
+ */
+export const bookingConditions = {
+  preparation: "Cheveux propres : Avant votre séance, assurez-vous que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).",
+  deposit: "Acompte obligatoire : Un acompte de 5 000 FCFA est requis pour confirmer votre réservation, le MoMo est à faire sur le 06 597 56 23 ou le Airtel au 05 05 092 89 99. Sans cet acompte, la réservation ne sera pas prise en compte.",
+  punctuality: "Ponctualité : Merci d'arriver à l'heure. Un retard de plus de 15 minutes peut entraîner l'annulation de la séance sans possibilité de remboursement de l'acompte.",
+  cancellation: "Annulation et report : Toute annulation doit être signalée au moins 24h à l'avance. Au-delà de ce délai, l'acompte ne sera pas remboursé.",
+  address: "Adresse: 119 RUE BANGALAS, POTO-POTO BRAZZAVILLE",
+  understanding: "Nous comprenons que des imprévus peuvent arriver, mais afin de garantir un service de qualité à chacun, nous vous demandons de respecter ces conditions. Merci pour votre compréhension et votre confiance !"
 };

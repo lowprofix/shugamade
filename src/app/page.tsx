@@ -1,6 +1,8 @@
 "use client";
 
 import AboutSection from "@/components/AboutSection";
+import AfterSessionSection from "@/components/AfterSessionSection";
+import BookingConditionsSection from "@/components/BookingConditionsSection";
 import BookingSection from "@/components/BookingSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
@@ -36,7 +38,15 @@ export default function ShugaMadeLandingPage() {
       { threshold: 0.5 }
     );
 
-    const sections = ["home", "about", "services", "testimonials", "booking"];
+    const sections = [
+      "home", 
+      "about", 
+      "services", 
+      "testimonials", 
+      "afterSession", 
+      "bookingConditions", 
+      "booking"
+    ];
     sections.forEach((section) => {
       const element = document.getElementById(section);
       if (element) observer.observe(element);
@@ -69,6 +79,12 @@ export default function ShugaMadeLandingPage() {
 
       {/* Testimonials */}
       <TestimonialsSection />
+
+      {/* Conseils Post-Séance */}
+      <AfterSessionSection />
+
+      {/* Conditions de réservation */}
+      <BookingConditionsSection />
 
       {/* Booking Section */}
       <BookingSection services={[...services, ...promoServices]} />

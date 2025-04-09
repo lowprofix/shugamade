@@ -1,6 +1,6 @@
 "use client";
 
-import { PromoPackageCard } from "@/components/PromoPackageCard";
+import { PromoPackageCard, PackageOption } from "@/components/PromoPackageCard";
 import { ServiceCard } from "@/components/ServiceCard";
 
 import { Service, promoPackages, services } from "@/lib/data";
@@ -35,7 +35,7 @@ export default function ServicesSection({
   // Fonction pour sélectionner un forfait promotionnel
   const selectPromoPackage = (
     packageId: number,
-    option: { name: string; price: string }
+    option: PackageOption
   ) => {
     // Logique pour sélectionner un forfait promotionnel
     console.log("Promo package selected", { packageId, option });

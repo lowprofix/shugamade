@@ -33,6 +33,14 @@ export interface PromoPackage {
   benefits: string[];
 }
 
+export interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  image: string;
+}
+
 /**
  * Données pour les services proposés
  */
@@ -227,6 +235,75 @@ export const testimonials: Testimonial[] = [
     text: "Grâce au traitement complet, mes cheveux ont retrouvé leur densité. Je recommande vivement !",
     rating: 4,
   },
+];
+
+/**
+ * Données pour les produits proposés
+ */
+export const products: Product[] = [
+  {
+    id: 14,
+    name: "Oméga 3 EPH & DHA",
+    description: "Complément alimentaire riche en acides gras essentiels pour nourrir les cheveux de l'intérieur.",
+    price: "8 500 FCFA",
+    image: "/images/products/omega3_epa_dha.jpg"
+  },
+  {
+    id: 15,
+    name: "Saw palmetto",
+    description: "Extrait naturel qui aide à réduire la chute des cheveux liée aux hormones.",
+    price: "8 500 FCFA",
+    image: "/images/products/saw_palmeto.jpg"
+  },
+  {
+    id: 16,
+    name: "Pépins de courge",
+    description: "Complément naturel riche en zinc et en fer pour renforcer les cheveux et stimuler leur croissance.",
+    price: "8 500 FCFA",
+    image: "/images/products/pepins_courge.jpg"
+  },
+  {
+    id: 18,
+    name: "Collagène marin",
+    description: "Protéine naturelle qui renforce la structure des cheveux et améliore leur élasticité.",
+    price: "8 000 FCFA",
+    image: "/images/products/collagene_marin.jpg"
+  },
+  {
+    id: 19,
+    name: "Complexe cheveux",
+    description: "Formule complète de vitamines et minéraux spécifiquement conçue pour la santé des cheveux.",
+    price: "8 500 FCFA",
+    image: "/images/products/complexe_cheveux.jpg"
+  },
+  {
+    id: 20,
+    name: "Spiruline",
+    description: "Super-aliment riche en protéines, fer et antioxydants pour des cheveux plus forts et plus brillants.",
+    price: "8 000 FCFA",
+    image: "/images/products/spiruline_bio.jpg"
+  },
+  // {
+  //   id: 24,
+  //   name: "Sérum coup de pousse",
+  //   description: "Sérum concentré qui stimule la croissance des cheveux et renforce les follicules pileux.",
+  //   price: "5 000 FCFA",
+  //   image: "/images/products/serum-pousse.jpg"
+  // },
+  // {
+  //   id: 27,
+  //   name: "Spray coup de pep's",
+  //   description: "Spray revitalisant qui donne un coup d'éclat immédiat aux cheveux ternes et fatigués.",
+  //   price: "2 500 FCFA",
+  //   image: "/images/products/spray-peps.jpg"
+  // },
+  // {
+  //   id: 28,
+  //   name: "Sérum coup de pep's+ 15ml",
+  //   description: "Version concentrée du sérum coup de pep's pour un traitement intensif des cheveux fragilisés.",
+  //   price: "5 000 FCFA",
+  //   image: "/images/products/serum-peps.jpg"
+  // }
 ];
 
 /**

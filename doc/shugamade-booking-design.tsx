@@ -14,7 +14,7 @@ const ShugaMadeBooking = () => {
     { id: 5, name: "Promo 4 séances - Tête entière", price: "175 000 FCFA", duration: "4 x 60 min" }
   ];
   
-  const selectService = (service) => {
+  const selectService = (service: any) => {
     setSelectedService(service);
     setStep(2);
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, MessageCircle, Check } from "lucide-react";
+import { Phone, MessageCircle, Check, Sparkles } from "lucide-react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { contactInfo, kitItems } from "@/lib/data";
 
@@ -10,9 +10,26 @@ export default function ContactSection() {
       <div className="px-4 mx-auto max-w-6xl sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:space-x-8">
           <div className="mb-8 md:w-1/2 md:mb-0">
-            <h2 className="mb-4 text-2xl font-light text-gray-800">
-              <span className="text-pink-400">Contact</span>
-            </h2>
+            <div className="relative mb-6">
+              {/* Étoile au-dessus du titre */}
+              <div className="absolute -top-4 -left-6 text-brand-pink-dark animate-pulse">
+                <Sparkles size={20} />
+              </div>
+              
+              <h2 className="mb-4 text-2xl md:text-3xl font-bold relative inline-block">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gradient-start to-brand-gradient-end relative">
+                  Contact
+                  {/* Petite étoile décorative */}
+                  <svg
+                    className="absolute -bottom-3 -right-6 w-4 h-4 text-brand-blue-dark animate-spin-slow"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                  </svg>
+                </span>
+              </h2>
+            </div>
             <p className="mb-6 text-gray-600">
               Besoin d'informations supplémentaires ? N'hésitez pas à nous
               contacter.

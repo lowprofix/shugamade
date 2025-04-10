@@ -9,7 +9,7 @@ import {
 } from "@/lib/calcom";
 import { Service as ServiceType } from "@/lib/data";
 import Cal from "@calcom/embed-react";
-import { Calendar, Check, Clock, ArrowRight, ArrowLeft } from "lucide-react";
+import { Calendar, Check, Clock, ArrowRight, ArrowLeft, Sparkles, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -83,10 +83,25 @@ export default function BookingSection({ services }: BookingSectionProps) {
       className="py-12 bg-gradient-to-b from-pink-50 to-teal-50"
     >
       <div className="max-w-6xl px-4 mx-auto sm:px-6 lg:px-8">
-        <div className="mb-12 text-center">
-          <h2 className="text-3xl font-light text-gray-800">
-            <span className="text-pink-400">Réservez</span>{" "}
-            <span className="text-teal-400">votre soin</span>
+        <div className="mb-12 text-center relative">
+          {/* Étoile au-dessus du titre */}
+          <div className="absolute -top-8 left-[calc(50%+60px)] text-brand-blue-dark animate-pulse">
+            <Sparkles size={24} />
+          </div>
+
+          <h2 className="mb-6 text-3xl md:text-4xl font-bold relative inline-block">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gradient-start to-brand-gradient-end relative">
+              Réservez
+              {/* Petite étoile décorative */}
+              <svg
+                className="absolute -top-6 -right-8 w-5 h-5 text-brand-pink-dark animate-spin-slow"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+              </svg>
+            </span>{" "}
+            votre soin
           </h2>
           <p className="max-w-2xl mx-auto mt-3 text-gray-600">
             Choisissez votre service et trouvez un créneau qui vous convient
@@ -121,123 +136,127 @@ export default function BookingSection({ services }: BookingSectionProps) {
           </div>
         </div>
 
-        <Card className="overflow-hidden bg-white rounded-lg shadow-md">
-          <CardContent className="p-4">
-            {bookingStep === 1 && (
-              <>
-                <h3 className="flex items-center mb-6 text-xl font-light text-gray-800">
-                  <Check className="mr-2 text-teal-400" size={20} />
-                  Sélectionnez votre soin
-                </h3>
-                <div className="space-y-4">
-                  {services.map((service) => (
-                    <div
-                      key={service.id}
-                      className="flex items-center justify-between p-4 transition-all border border-gray-100 rounded-lg cursor-pointer hover:border-teal-200 hover:shadow-sm"
-                      onClick={() => selectService(service)}
-                    >
-                      <div>
-                        <h3 className="font-medium text-gray-800">
-                          {service.name}
-                        </h3>
-                        <div className="flex items-center mt-1 text-sm text-gray-500">
-                          <Clock size={14} className="mr-1" />
-                          <span>{service.duration}</span>
-                        </div>
+        {bookingStep === 1 && (
+          <>
+            <h3 className="flex items-center mb-6 text-xl font-medium text-gray-800">
+              <Check className="mr-2 text-teal-400" size={20} />
+              Sélectionnez votre soin
+            </h3>
+            
+            {/* Informations importantes - placées en haut pour être visibles immédiatement */}
+            <div className="p-4 mb-6 bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="flex items-start">
+                <Info size={18} className="text-teal-500 mt-1 mr-2 flex-shrink-0" />
+                <p className="text-sm text-gray-700">
+                  <span className="font-medium">Information importante :</span> Il est recommandé de réaliser 4 à 6 séances 
+                  (1 séance toutes les deux semaines pendant 2 à 3 mois). Des séances d'entretien peuvent être proposées pour maintenir les résultats.
+                </p>
+              </div>
+            </div>
+            
+            {/* Services en grille */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services.map((service) => (
+                <Card
+                  key={service.id}
+                  className="overflow-hidden transition-all hover:shadow-md cursor-pointer hover:border-teal-200"
+                  onClick={() => selectService(service)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex flex-col h-full">
+                      <h4 className="font-medium text-gray-800 mb-2">{service.name}</h4>
+                      <div className="flex items-center mt-1 text-sm text-gray-500 mb-2">
+                        <Clock size={14} className="mr-1 flex-shrink-0" />
+                        <span>{service.duration}</span>
                       </div>
-                      <div className="flex items-center">
-                        <span className="font-medium text-right text-teal-600">
-                          {service.price}
-                        </span>
-                        <ArrowRight size={16} className="ml-2 text-pink-400" />
+                      <div className="mt-auto pt-3 border-t border-gray-100 flex justify-between items-center">
+                        <span className="font-medium text-teal-600">{service.price}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-pink-400 hover:text-pink-500 hover:bg-pink-50 p-1"
+                        >
+                          <ArrowRight size={16} />
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
 
-            {bookingStep === 2 && selectedService && (
-              <>
-                <div className="flex items-center justify-between mb-6">
-                  <Button
-                    onClick={() => {
-                      setBookingStep(1);
-                      setCalendarVisible(false);
+        {bookingStep === 2 && selectedService && (
+          <Card className="overflow-hidden bg-white rounded-lg shadow-md">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-6">
+                <Button
+                  onClick={() => {
+                    setBookingStep(1);
+                    setCalendarVisible(false);
+                  }}
+                  variant="ghost"
+                  className="flex items-center text-sm text-gray-500 hover:text-teal-500"
+                >
+                  <ArrowLeft size={16} className="mr-1" /> Retour aux services
+                </Button>
+                <div className="px-3 py-1 text-sm text-teal-700 rounded-full bg-teal-50">
+                  {selectedService.name}
+                </div>
+              </div>
+
+              <h3 className="flex items-center mb-6 text-xl font-light text-gray-800">
+                <Calendar className="mr-2 text-teal-400" size={20} />
+                Choisissez votre date et heure
+              </h3>
+
+              {isLoading && (
+                <div className="py-12 text-center">
+                  <div className="w-12 h-12 mx-auto border-b-2 border-teal-400 rounded-full animate-spin"></div>
+                  <p className="mt-4 text-gray-600">
+                    Chargement du calendrier...
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="p-4 mb-6 text-red-600 rounded-lg bg-red-50">
+                  {error}
+                </div>
+              )}
+
+              {calendarVisible && !isLoading && (
+                <div
+                  style={{ height: "600px" }}
+                  className="w-full max-w-full overflow-hidden border border-gray-200 rounded-lg"
+                >
+                  <Cal
+                    namespace={CALCOM_NAMESPACE}
+                    calLink={selectedService.calLink}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      overflow: "scroll",
                     }}
-                    variant="ghost"
-                    className="flex items-center text-sm text-gray-500 hover:text-teal-500"
-                  >
-                    <ArrowLeft size={16} className="mr-1" /> Retour aux services
-                  </Button>
-                  <div className="px-3 py-1 text-sm text-teal-700 rounded-full bg-teal-50">
-                    {selectedService.name}
-                  </div>
+                    config={{
+                      layout: "month_view",
+                      primaryColor: "#2dd4bf",
+                      brandColor: "#f472b6",
+                    }}
+                  />
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-                <h3 className="flex items-center mb-6 text-xl font-light text-gray-800">
-                  <Calendar className="mr-2 text-teal-400" size={20} />
-                  Choisissez votre date et heure
-                </h3>
-
-                {isLoading && (
-                  <div className="py-12 text-center">
-                    <div className="w-12 h-12 mx-auto border-b-2 border-teal-400 rounded-full animate-spin"></div>
-                    <p className="mt-4 text-gray-600">
-                      Chargement du calendrier...
-                    </p>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="p-4 mb-6 text-red-600 rounded-lg bg-red-50">
-                    {error}
-                  </div>
-                )}
-
-                {calendarVisible && !isLoading && (
-                  <div
-                    style={{ height: "600px" }}
-                    className="w-full max-w-full overflow-hidden border border-gray-200 rounded-lg"
-                  >
-                    <Cal
-                      namespace={CALCOM_NAMESPACE}
-                      calLink={selectedService.calLink}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        overflow: "scroll",
-                      }}
-                      config={{
-                        layout: "month_view",
-                        primaryColor: "#2dd4bf",
-                        brandColor: "#f472b6",
-                      }}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Informations additionnelles */}
-        <div className="max-w-3xl p-6 mx-auto mt-8 bg-white rounded-lg shadow-md">
-          <h3 className="mb-3 font-medium text-gray-800">
-            Information importante
-          </h3>
-          <p className="text-sm text-gray-600">
-            Il est recommandé de réaliser 4 à 6 séances (1 séance toutes les
-            deux semaines pendant 2 à 3 mois). Des séances d'entretien peuvent
-            être proposées pour maintenir les résultats.
+        {/* Note sur le kit offert */}
+        <div className="p-4 mt-6 rounded-lg bg-pink-50 border border-pink-100 max-w-3xl mx-auto">
+          <p className="text-sm text-gray-700 flex items-start">
+            <span className="font-medium mr-1">Kit offert :</span> Produits de
+            soins adaptés à votre traitement pour toute réservation d'un forfait.
           </p>
-
-          <div className="p-3 mt-4 rounded-lg bg-pink-50">
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Kit offert :</span> Produits de
-              soins adaptés à votre traitement.
-            </p>
-          </div>
         </div>
       </div>
     </section>

@@ -60,15 +60,15 @@ export default function ShugaNavigation({
               Services
             </Button>
             <Button
-              onClick={() => scrollToSection("testimonials")}
+              onClick={() => scrollToSection("products")}
               variant="ghost"
               className={`${
-                activeSection === "testimonials"
+                activeSection === "products"
                   ? "text-brand-pink-dark"
                   : "text-gray-600 hover:text-brand-pink-dark"
               }`}
             >
-              Témoignages
+              Produits
             </Button>
             <Button
               onClick={() => scrollToSection("afterSession")}
@@ -158,13 +158,13 @@ export default function ShugaNavigation({
             </Button>
             <Button
               onClick={() => {
-                scrollToSection("testimonials");
+                scrollToSection("products");
                 setMobileMenuOpen(false);
               }}
               variant="ghost"
               className="justify-start w-full text-left px-3 py-2 text-gray-600 hover:bg-brand-gradient-start/10 hover:text-brand-pink-dark rounded-md"
             >
-              Témoignages
+              Produits
             </Button>
             <Button
               onClick={() => {

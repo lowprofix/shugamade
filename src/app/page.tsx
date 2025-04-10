@@ -7,6 +7,7 @@ import BookingSection from "@/components/BookingSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
+import ProductsSection from "@/components/ProductsSection";
 import ServicesSection from "@/components/ServicesSection";
 import ShugaNavigation from "@/components/ShugaNavigation";
 import TestimonialsSection from "@/components/TestimonialsSection";
@@ -21,7 +22,15 @@ export default function ShugaMadeLandingPage() {
     setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+      // Calculer le décalage pour compenser la hauteur de la barre de navigation
+      const navHeight = 64; // Hauteur de la barre de navigation (h-16 = 4rem = 64px)
+      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+      const offsetPosition = elementPosition - navHeight - 16; // 16px d'espace supplémentaire
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
     }
   };
 
@@ -42,6 +51,7 @@ export default function ShugaMadeLandingPage() {
       "home", 
       "about", 
       "services", 
+      "products",
       "testimonials", 
       "afterSession", 
       "bookingConditions", 
@@ -76,6 +86,9 @@ export default function ShugaMadeLandingPage() {
 
       {/* Services Section */}
       <ServicesSection scrollToBooking={() => scrollToSection("booking")} />
+
+      {/* Products Section */}
+      <ProductsSection scrollToContact={() => scrollToSection("contact")} />
 
       {/* Testimonials */}
       <TestimonialsSection />

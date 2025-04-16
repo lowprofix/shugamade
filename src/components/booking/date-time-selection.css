@@ -1,0 +1,26 @@
+/* Styles pour les indicateurs de disponibilité sur le calendrier */
+
+/* Style pour les jours avec des créneaux disponibles */
+.has-available-slots::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #4ade80; /* Couleur verte pour l'indicateur */
+}
+
+/* Ajustements pour l'affichage de deux mois côte à côte */
+@media (min-width: 1024px) {
+  .rdp-months {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .rdp-month {
+    margin: 0;
+  }
+}

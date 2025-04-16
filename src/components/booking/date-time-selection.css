@@ -13,14 +13,80 @@
   background-color: #4ade80; /* Couleur verte pour l'indicateur */
 }
 
-/* Ajustements pour l'affichage de deux mois côte à côte */
-@media (min-width: 1024px) {
+/* Règles générales pour les calendriers */
+.rdp {
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+.rdp-month {
+  max-width: 100%;
+}
+
+.rdp-table {
+  margin: 0 auto;
+}
+
+.rdp-caption {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.rdp-caption_label {
+  text-align: center;
+}
+
+.rdp-nav {
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.rdp-nav_button {
+  pointer-events: auto;
+}
+
+/* Styles pour petits et moyens écrans */
+@media (max-width: 1279px) {
+  .rdp-months {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .rdp-month {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 350px;
+  }
+
+  .rdp-table {
+    width: 100%;
+  }
+}
+
+/* Ajustements pour l'affichage de deux mois côte à côte sur grands écrans */
+@media (min-width: 1280px) {
   .rdp-months {
     display: flex;
+    justify-content: center;
     gap: 1rem;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 0 auto;
   }
-  
+
   .rdp-month {
     margin: 0;
+    min-width: 280px;
+    max-width: 350px;
   }
 }

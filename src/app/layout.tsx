@@ -19,7 +19,10 @@ export const metadata: Metadata = {
   title: "Shugamade",
   description: "Spécialiste des traitement capillaire naturel",
   icons: {
-    icon: "/logo.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
   },
 };
 
@@ -30,12 +33,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <DotBackground dotSize={24} dotOpacity={0.3} fadeCenter={false} className="min-h-[100dvh]">
-            <Container className="min-h-full">
-              {children}
-            </Container>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <DotBackground
+            dotSize={24}
+            dotOpacity={0.3}
+            fadeCenter={false}
+            className="min-h-[100dvh]"
+          >
+            <Container className="min-h-full">{children}</Container>
           </DotBackground>
         </ThemeProvider>
       </body>

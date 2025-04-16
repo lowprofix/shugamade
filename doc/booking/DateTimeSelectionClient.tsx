@@ -9,7 +9,7 @@ import { fr } from 'date-fns/locale';
 import { parse, isEqual, format } from 'date-fns';
 import { Service as ServiceType } from "@/lib/data";
 import { AvailableSlot } from "./BookingClientWrapper";
-import SlotsSkeleton from "../skeletons/SlotsSkeleton";
+
 
 // Hook pour détecter si l'écran est large
 const useIsLargeScreen = () => {

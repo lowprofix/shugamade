@@ -7,9 +7,9 @@ import ServiceSelectionClient from "./ServiceSelectionClient";
 import DateTimeSelectionClient from "./DateTimeSelectionClient";
 import CustomerInfoClient from "./CustomerInfoClient";
 import BookingConfirmationClient from "./BookingConfirmationClient";
-import ServicesSkeleton from "../skeletons/ServicesSkeleton";
-import CalendarSkeleton from "../skeletons/CalendarSkeleton";
-import CustomerFormSkeleton from "../skeletons/CustomerFormSkeleton";
+import ServicesSkeleton from "@/components/skeletons/ServicesSkeleton";
+import CalendarSkeleton from "@/components/skeletons/CalendarSkeleton";
+import CustomerFormSkeleton from "@/components/skeletons/CustomerFormSkeleton";
 
 // Type pour les créneaux disponibles
 export interface AvailableSlot {

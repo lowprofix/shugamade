@@ -323,24 +323,7 @@ export default function ContactSection() {
               </div>
             </Card>
             
-            {/* Carte de l'adresse */}
-            <div className="relative overflow-hidden rounded-lg shadow-lg h-64 sm:h-72">
-              <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1672.872619216398!2d15.288912718506626!3d-4.262257086296904!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sfr!2scg!4v1744828666638!5m2!1sfr!2scg" 
-                width="100%" 
-                height="100%" 
-                style={{ border: 0 }} 
-                allowFullScreen 
-                loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Localisation ShugaMade"
-                className="absolute inset-0"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                <p className="font-medium">{contactInfo.address}</p>
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>

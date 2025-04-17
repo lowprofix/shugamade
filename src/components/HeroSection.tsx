@@ -43,7 +43,11 @@ const DecorativeShape = ({
 
 export default function HeroSection({ scrollToSection }: HeroSectionProps) {
   return (
-    <section id="home" className="relative min-h-[calc(100vh-4rem)] flex items-center pt-10 sm:pt-16 pb-6 sm:pb-10 overflow-hidden">
+    <section
+  id="home"
+  style={{ paddingTop: "var(--nav-height, 4rem)" }}
+  className="relative min-h-[calc(100vh-4rem)] flex items-center pt-0 sm:pt-16 pb-6 sm:pb-10 overflow-hidden"
+>
       {/* Formes décoratives - positions ajustées pour ne pas toucher les bords */}
       <DecorativeShape className="w-48 sm:w-64 h-48 sm:h-64 left-5 sm:left-10 top-20" color="#e2b3f7" />
       <DecorativeShape className="w-64 sm:w-96 h-64 sm:h-96 right-5 sm:right-10 bottom-10" color="#bfe0fb" />

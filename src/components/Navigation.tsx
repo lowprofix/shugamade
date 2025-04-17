@@ -52,6 +52,8 @@ function NavItem({ label, section, activeSection, onClick, className }: NavItemP
   );
 }
 
+import { useEffect, useRef } from "react";
+
 export default function Navigation({ activeSection, scrollToSection }: NavigationProps) {
   const [open, setOpen] = useState(false);
   
@@ -60,13 +62,29 @@ export default function Navigation({ activeSection, scrollToSection }: Navigatio
     setOpen(false);
   };
 
+  const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function updateNavHeight() {
+      if (navRef.current) {
+        document.documentElement.style.setProperty(
+          "--nav-height",
+          navRef.current.offsetHeight + "px"
+        );
+      }
+    }
+    updateNavHeight();
+    window.addEventListener("resize", updateNavHeight);
+    return () => window.removeEventListener("resize", updateNavHeight);
+  }, []);
+
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 w-full transition-colors">
+    <div ref={navRef} className="fixed top-0 left-0 right-0 z-50 w-full transition-colors">
       <nav className="w-full bg-white/95 bg-gradient-to-r from-[#bfe0fb]/5 to-transparent dark:bg-gray-950 dark:bg-gradient-to-r dark:from-[#e2b3f7]/10 dark:to-transparent shadow-sm dark:shadow-[#e2b3f7]/10">
         <Container>
           <div className="flex justify-between items-center h-16">
             {/* Logo à gauche */}
-            <div className="flex items-center">
+            <div className="flex items-center px-4 md:px-0">
               <Logo size={40} />
             </div>
 
@@ -110,7 +128,7 @@ export default function Navigation({ activeSection, scrollToSection }: Navigatio
             </div>
 
           {/* Mobile menu */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center px-4">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400 hover:text-[#e2b3f7] dark:hover:text-[#ffb2dd] transition-colors duration-200">

@@ -91,8 +91,20 @@ export default function ContactSection() {
     setError("");
 
     try {
-      // Simulation d'envoi de formulaire
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Envoyer les données à notre API route
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formState)
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de l\'envoi du message');
+      }
       
       // Réinitialiser le formulaire et afficher un message de succès
       setFormState({ name: "", email: "", message: "" });
@@ -103,7 +115,8 @@ export default function ContactSection() {
         setIsSubmitted(false);
       }, 5000);
     } catch (err) {
-      setError("Une erreur s'est produite. Veuillez réessayer plus tard.");
+      console.error("Erreur lors de l'envoi du formulaire:", err);
+      setError(err instanceof Error ? err.message : "Une erreur s'est produite. Veuillez réessayer plus tard.");
     } finally {
       setIsSubmitting(false);
     }
@@ -278,8 +291,8 @@ export default function ContactSection() {
                   Horaires d'ouverture
                 </h4>
                 <div className="space-y-1 text-sm">
-                  <p className="text-gray-600 dark:text-gray-300">Lundi - Vendredi: 9h00 - 18h00</p>
-                  <p className="text-gray-600 dark:text-gray-300">Samedi: 10h00 - 16h00</p>
+                  <p className="text-gray-600 dark:text-gray-300">Lundi - Vendredi: 9h00 - 19h00</p>
+                  <p className="text-gray-600 dark:text-gray-300">Samedi: 09h00 - 19h00</p>
                   <p className="text-gray-600 dark:text-gray-300">Dimanche: Fermé</p>
                 </div>
               </div>

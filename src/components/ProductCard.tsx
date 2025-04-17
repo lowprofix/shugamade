@@ -19,7 +19,9 @@ export function ProductCard({ product, isSelected, onSelect, className }: Produc
   return (
     <Card 
       className={cn(
-        "group relative overflow-hidden border-none shadow-lg transition-all duration-300 hover:shadow-xl h-full",
+        "group relative overflow-hidden border-none shadow-lg h-full",
+        "transition-all duration-500 ease-out",
+        "hover:shadow-xl hover:shadow-[#e2b3f7]/10 hover:-translate-y-1",
         isSelected ? "ring-2 ring-[#bfe0fb]" : "",
         className
       )}
@@ -39,13 +41,13 @@ export function ProductCard({ product, isSelected, onSelect, className }: Produc
           src={product.image} 
           alt={product.name}
           fill
-          className="object-cover transition-transform group-hover:scale-105"
+          className="object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:brightness-[1.03]"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       </div>
       
       {/* Contenu du produit */}
-      <div className="p-5">
+      <div className="p-5 transition-all duration-500 group-hover:bg-gradient-to-br from-transparent to-[#e2b3f7]/5">
         <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white">
           {product.name}
         </h3>
@@ -67,7 +69,7 @@ export function ProductCard({ product, isSelected, onSelect, className }: Produc
             variant={isSelected ? "default" : "outline"}
             size="sm"
             className={cn(
-              "transition-all",
+              "transition-all duration-300 ease-in-out transform hover:scale-[1.02]",
               isSelected 
                 ? "bg-gradient-to-r from-[#bfe0fb] to-[#9deaff] text-white hover:shadow-[#9deaff]/20 hover:shadow-md" 
                 : "border-[#bfe0fb] text-[#bfe0fb] hover:bg-[#bfe0fb]/10"

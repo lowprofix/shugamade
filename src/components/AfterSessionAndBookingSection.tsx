@@ -181,10 +181,7 @@ export default function AfterSessionAndBookingSection() {
                       ))}
                     </ul>
                     
-                    <Button variant="outline" className="mt-6 w-full border-[#bfe0fb] text-[#9deaff] hover:bg-[#bfe0fb]/10">
-                      <Download className="w-4 h-4 mr-2" />
-                      Télécharger les conseils
-                    </Button>
+                    
                   </CardContent>
                 </Card>
               </div>

@@ -19,7 +19,7 @@ export function Logo({ size = 40, className }: LogoProps) {
         className="object-contain"
         priority
       />
-      <span className="ml-2 font-semibold text-lg text-brand-pink-dark">Shugamade</span>
+      <span className="ml-2 font-semibold text-lg text-brand-pink-dark">SHUGAMADE</span>
     </Link>
   );
 }

@@ -142,7 +142,7 @@ export default function AboutSection({ scrollToSection }: AboutSectionProps) {
         
         <div className="mt-20">
           <Card className="relative overflow-hidden border-none shadow-xl">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#e2b3f7]/5 to-[#bfe0fb]/5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#e2b3f7]/5 to-[#bfe0fb]/5 pointer-events-none" />
             
             <div className="grid items-center grid-cols-1 gap-8 p-8 md:grid-cols-2 lg:p-12">
               <div className="relative">

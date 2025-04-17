@@ -19,6 +19,7 @@ import { parse, isEqual, format, addDays, isSameDay } from "date-fns";
 import { Service as ServiceType } from "@/lib/data";
 import { AvailableSlot } from "./BookingClientWrapper";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Styles pour les indicateurs de disponibilité
 import "./date-time-selection.css";
@@ -385,11 +386,33 @@ export default function DateTimeSelection({
       <Card className="overflow-hidden border-none shadow-md">
         <CardContent className="p-0">
           {isLoading && !loadingMoreSlots ? (
-            <div className="flex flex-col items-center justify-center p-12">
-              <Loader2 className="w-8 h-8 text-[#bfe0fb] animate-spin mb-4" />
-              <p className="text-gray-600 dark:text-gray-300">
-                Chargement des disponibilités...
-              </p>
+            <div className="p-6 space-y-6">
+              {/* Skeleton pour le calendrier */}
+              <div className="space-y-3">
+                <Skeleton className="h-6 w-40" />
+                <div className="grid grid-cols-7 gap-2">
+                  {Array(7).fill(0).map((_, i) => (
+                    <Skeleton key={`day-${i}`} className="h-4 w-full" />
+                  ))}
+                </div>
+                {Array(5).fill(0).map((_, weekIndex) => (
+                  <div key={`week-${weekIndex}`} className="grid grid-cols-7 gap-2">
+                    {Array(7).fill(0).map((_, dayIndex) => (
+                      <Skeleton key={`day-${weekIndex}-${dayIndex}`} className="h-10 w-full rounded-md" />
+                    ))}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Skeleton pour les créneaux horaires */}
+              <div className="space-y-3">
+                <Skeleton className="h-6 w-40" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {Array(8).fill(0).map((_, i) => (
+                    <Skeleton key={`slot-${i}`} className="h-16 w-full rounded-md" />
+                  ))}
+                </div>
+              </div>
             </div>
           ) : error ? (
             <div className="p-4 sm:p-6 text-center">
@@ -436,7 +459,15 @@ export default function DateTimeSelection({
                   <div className="relative  max-w-full">
                     {loadingMoreSlots && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10 rounded-lg">
-                        <Loader2 className="w-6 h-6 text-[#bfe0fb] animate-spin" />
+                        <div className="space-y-2 w-full p-4">
+                          {Array(3).fill(0).map((_, weekIndex) => (
+                            <div key={`loading-week-${weekIndex}`} className="grid grid-cols-7 gap-1">
+                              {Array(7).fill(0).map((_, dayIndex) => (
+                                <Skeleton key={`loading-day-${weekIndex}-${dayIndex}`} className="h-8 w-full rounded-md" />
+                              ))}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {/* Calendrier pour mobile et tablette (1 mois) */}

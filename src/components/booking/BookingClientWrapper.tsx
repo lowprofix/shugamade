@@ -146,13 +146,53 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
     setBookingError(null);
     
     try {
-      // Préparer les données de réservation
+      // 1. Créer d'abord le client dans Hiboutik
+      let hiboutikClientId = null;
+      
+      // Préparer les données du client pour Hiboutik
+      const hiboutikClientData = {
+        customers_first_name: customerInfo.name.split(' ')[0] || customerInfo.name,
+        customers_last_name: customerInfo.name.split(' ').slice(1).join(' ') || '',
+        customers_phone_number: customerInfo.phone,
+        customers_email: customerInfo.email || ''
+      };
+      
+      try {
+        // Appeler l'API Hiboutik pour créer le client
+        const hiboutikResponse = await fetch('/api/hiboutik/clients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(hiboutikClientData)
+        });
+        
+        if (!hiboutikResponse.ok) {
+          console.warn('Échec de la création du client dans Hiboutik, mais la réservation continuera:', 
+            await hiboutikResponse.text());
+        } else {
+          const hiboutikData = await hiboutikResponse.json();
+          hiboutikClientId = hiboutikData.customers_id;
+          console.log('Client créé dans Hiboutik avec ID:', hiboutikClientId);
+        }
+      } catch (hiboutikError) {
+        console.warn('Erreur lors de la création du client dans Hiboutik, mais la réservation continuera:', 
+          hiboutikError);
+      }
+      
+      // 2. Préparer les données de réservation (comme avant, mais avec l'ID Hiboutik)
+      // Créer une copie des données client pour ne pas modifier la structure originale
+      const customerInfoWithHiboutik = { ...customerInfo };
+      
+      // Ajouter l'ID Hiboutik dans un champ séparé qui n'affectera pas la structure existante
       const bookingData = {
         title: `Réservation - ${selectedService?.name} - ${customerInfo.name}`,
         description: `Réservation pour ${customerInfo.name}, Tél: ${customerInfo.phone}${customerInfo.email ? `, Email: ${customerInfo.email}` : ''}`,
         service: selectedService,
-        customer: customerInfo,
-        isPartOfPackage: isMultipleBooking
+        customer: customerInfoWithHiboutik,
+        isPartOfPackage: isMultipleBooking,
+        // Ajouter l'ID Hiboutik dans un champ séparé qui n'affectera pas la structure existante
+        hiboutikClientId: hiboutikClientId
       };
       
       // Utiliser un timeout pour les requêtes

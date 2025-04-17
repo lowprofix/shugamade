@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shugamade",
+  title: "SHUGAMADE",
   description: "Spécialiste des traitement capillaire naturel",
   icons: {
     icon: [

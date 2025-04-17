@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
       packageInfo: bookingData.packageInfo || null,
       service: bookingData.service || null,
       customer: bookingData.customer || null,
+      // Ajouter l'ID Hiboutik s'il existe
+      hiboutikClientId: bookingData.hiboutikClientId || null,
     };
 
     console.log("Envoi de la réservation à n8n:", eventData);

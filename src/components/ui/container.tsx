@@ -32,22 +32,15 @@ export interface ContainerProps
  * Utilisation :
  * <Container variant="page|section|narrow|fluid">...</Container>
  */
-export const Container: React.FC<ContainerProps> = ({
-  asChild,
+export function Container({
   className,
   variant,
   ...props
-}) => {
-  const Comp = asChild ? (React.Fragment as any) : "div";
+}: ContainerProps) {
   const classes = cn(containerVariants({ variant }), className);
-
-  // Si asChild, on attend un composant avec className en slot
-  if (asChild) {
-    return props.children;
-  }
-  return (
-    <div className={classes} {...props} />
-  );
-};
+  
+  // Approche simplifiée : toujours retourner un div
+  return <div className={classes} {...props} />;
+}
 
 export { containerVariants };

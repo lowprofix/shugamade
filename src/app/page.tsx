@@ -39,15 +39,55 @@ export default function Home() {
 
   // Observer pour détecter la section visible
   useEffect(() => {
+    // Stocker les entrées visibles et leurs ratios
+    const visibleSections = new Map();
+    
+    // Fonction pour déterminer la section la plus visible
+    const getMostVisibleSection = () => {
+      if (visibleSections.size === 0) return null;
+      
+      // Trouver la section avec la plus grande visibilité
+      let maxVisibility = 0;
+      let mostVisibleSection = null;
+      
+      visibleSections.forEach((visibility, sectionId) => {
+        if (visibility > maxVisibility) {
+          maxVisibility = visibility;
+          mostVisibleSection = sectionId;
+        }
+      });
+      
+      return mostVisibleSection;
+    };
+    
+    // Configuration de l'IntersectionObserver avec des seuils multiples
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          const sectionId = entry.target.id;
+          
+          // Mettre à jour la visibilité de la section
           if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
+            // Calculer un score de visibilité basé sur le ratio d'intersection
+            // et la proximité au centre de l'écran
+            const ratio = entry.intersectionRatio;
+            visibleSections.set(sectionId, ratio);
+          } else {
+            // Supprimer les sections qui ne sont plus visibles
+            visibleSections.delete(sectionId);
           }
         });
+        
+        // Mettre à jour la section active avec la plus visible
+        const mostVisible = getMostVisibleSection();
+        if (mostVisible) {
+          setActiveSection(mostVisible);
+        }
       },
-      { threshold: 0.5 }
+      { 
+        threshold: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], // Seuils multiples pour une détection plus précise
+        rootMargin: "-80px 0px 0px 0px" // Tenir compte de la barre de navigation fixe
+      }
     );
 
     // Observer toutes les sections

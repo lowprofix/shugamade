@@ -16,13 +16,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SHUGAMADE",
-  description: "Spécialiste des traitement capillaire naturel",
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/logo.svg", type: "image/svg+xml" },
+  title: "Shugamade - Spécialiste des traitement capillaire naturel",
+  description:
+    "Traitements capillaires naturels et soins spécialisés pour tous types de cheveux",
+  metadataBase: new URL("https://www.shugamade.com"),
+  openGraph: {
+    title: "Shugamade",
+    description: "Spécialiste des traitement capillaire naturel",
+    url: "https://www.shugamade.com",
+    siteName: "Shugamade",
+    images: [
+      {
+        url: "https://www.shugamade.com/opengraph-image.png", // Cette image sera générée automatiquement
+        width: 1200,
+        height: 630,
+        alt: "Shugamade - Traitements capillaires naturels",
+      },
     ],
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shugamade",
+    description: "Spécialiste des traitement capillaire naturel",
+    images: ["https://www.shugamade.com/twitter-image.png"], // Cette image sera générée automatiquement
   },
 };
 

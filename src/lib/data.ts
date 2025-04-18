@@ -40,6 +40,7 @@ export interface Product {
   description: string;
   price: string;
   image: string;
+  category?: string;
   stock?: number; // Quantité en stock
   isAvailable?: boolean; // Pour indiquer si le produit est disponible
 }
@@ -280,7 +281,7 @@ export const products: Product[] = [
   {
     id: 27,
     hiboutikId: 27,
-    name: "Spray coup de pep's",
+    name: "Spray coup de pep's 100ml",
     description:
       "Un spray multi-action qui stimule la pousse, hydrate le cuir chevelu, apaise les irritations et lutte contre les pellicules et la chute. Idéal en soin quotidien ou avant un traitement capillaire. Pour un cuir chevelu sain, rééquilibré et plein d'énergie.\n\nComposition:\nAqua, Mentha Piperita Leaf Extract, Urtica Dioica Leaf Extract, Cassia alata Extract, Eugenia Caryophyllus Bud Extract, Glycerin, Rosmarinus Officinalis Leaf Oil, Mentha Piperita Oil, Benzyl Alcohol, Dehydroacetic Acid ",
     price: "2 500 FCFA",
@@ -291,11 +292,12 @@ export const products: Product[] = [
   {
     id: 24,
     hiboutikId: 24,
-    name: "Sérum coup de pousse",
+    name: "Sérum coup de pousse 15ml",
     description:
       "Ce sérum précieux nourrit, renforce et revitalise les cheveux grâce à une synergie d'huiles végétales et essentielles. Il stimule la pousse, freine la chute, lutte contre l'alopécie et renforce les cheveux cassés ou abîmés.\n\nComposition:\nSeed Oil: Ricinus communis, Azadirachta indica, Simmondsia chinensis, Macadamia ternifolia, cannabis sativa, rosa rubiginosa, Brassica juncea, glycérin Rosmarinus officinalis Leaf Oil, Ocimum basilicum Oil, Mentha piperita Oil, Tocopheryl Acetate",
     price: "5 000 FCFA",
     image: "/images/products/coup_pousse.PNG",
+    category: "oils",
     stock: 5,
     isAvailable: true,
   },
@@ -307,6 +309,7 @@ export const products: Product[] = [
       "Stimule la pousse, renforce la fibre capillaire et réduit la chute grâce à une synergie d'actifs puissants. Texture légère, absorption rapide. Idéal en soin quotidien.\n\nComposition: \nMentha Piperita Leaf, Urtica Dioica Extract, Syzygium Aromaticum Flower Extract, Clerodendrum Splendens Extract, Aloe Barbadensis Leaf Juice, Panthenol, Niacinamide, CaffeineMethylsulfonylmethane, Sodium Hyaluronate, Panax Ginseng Root Extract, Pisum Sativum Sprout Extract, Acetyl Tetrapeptide-3, Biotinoyl Tripeptide-1, Rosmarinus, Officinalis Leaf Oil, Benzyl Alcohol",
     price: "5 000 FCFA",
     image: "/images/products/coup_peps_serum.PNG",
+    category: "oils",
     stock: 3,
     isAvailable: true,
   },
@@ -318,6 +321,7 @@ export const products: Product[] = [
       "Appareil de micro-needling pour stimuler la repousse capillaire.",
     price: "5 000 FCFA",
     image: "/images/products/dermaroller.PNG",
+    category: "accessories",
     stock: 2,
     isAvailable: true,
   },
@@ -329,6 +333,7 @@ export const products: Product[] = [
       "Complément alimentaire riche en acides gras essentiels pour nourrir les cheveux de l'intérieur.",
     price: "8 500 FCFA",
     image: "/images/products/omega3_epa_dha.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },
@@ -340,17 +345,19 @@ export const products: Product[] = [
       "Extrait naturel qui aide à réduire la chute des cheveux liée aux hormones.",
     price: "8 500 FCFA",
     image: "/images/products/saw_palmeto.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },
   {
     id: 303,
     hiboutikId: 16,
-    name: "Huile de pépins de courge",
+    name: "Pépins de courge",
     description:
       "Complément naturel riche en zinc et en fer pour renforcer les cheveux et stimuler leur croissance.",
     price: "8 500 FCFA",
     image: "/images/products/pepins_courge.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },
@@ -360,8 +367,9 @@ export const products: Product[] = [
     name: "Collagène marin",
     description:
       "Protéine naturelle qui renforce la structure des cheveux et améliore leur élasticité.",
-    price: "8 000 FCFA",
+    price: "8 500 FCFA",
     image: "/images/products/collagene_marin.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },
@@ -373,6 +381,7 @@ export const products: Product[] = [
       "Formule complète de vitamines et minéraux spécifiquement conçue pour la santé des cheveux.",
     price: "8 500 FCFA",
     image: "/images/products/complexe_cheveux.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },
@@ -382,8 +391,9 @@ export const products: Product[] = [
     name: "Spiruline",
     description:
       "Super-aliment riche en protéines, fer et antioxydants pour des cheveux plus forts et plus brillants.",
-    price: "8 000 FCFA",
+    price: "8 500 FCFA",
     image: "/images/products/spiruline_bio.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },
@@ -392,8 +402,9 @@ export const products: Product[] = [
     hiboutikId: 17,
     name: "Fer",
     description: "Complément alimentaire pour la santé des cheveux.",
-    price: "8 000 FCFA",
+    price: "8 500 FCFA",
     image: "/images/products/fer.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },
@@ -405,6 +416,7 @@ export const products: Product[] = [
       "Le Ginseng rouge contient des nutriments connus pour leurs propriétés anti-fatigue et stimulantes.",
     price: "10 000 FCFA",
     image: "/images/products/ginseng.jpg",
+    category: "supplements",
     stock: 1,
     isAvailable: true,
   },

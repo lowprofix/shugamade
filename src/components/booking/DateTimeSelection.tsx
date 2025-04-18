@@ -13,9 +13,17 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { fr } from "date-fns/locale";
-import { parse, isEqual, format, addDays, isSameDay } from "date-fns";
+import {
+  parse,
+  isEqual,
+  format,
+  addDays,
+  isSameDay,
+  differenceInDays,
+} from "date-fns";
 import { Service as ServiceType } from "@/lib/data";
 import { AvailableSlot } from "./BookingClientWrapper";
 import { cn } from "@/lib/utils";
@@ -66,6 +74,10 @@ export default function DateTimeSelection({
   const [sessionCount, setSessionCount] = useState<number>(0);
   const [serviceType, setServiceType] = useState<string>("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  // Nouvel état pour stocker les dates non valides (ne respectant pas l'intervalle de 2 semaines)
+  const [invalidDates, setInvalidDates] = useState<Date[]>([]);
+  // État pour afficher un message de guidage
+  const [guidanceMessage, setGuidanceMessage] = useState<string | null>(null);
 
   // Fonction pour formater la date pour l'affichage
   const formatDateString = (dateStr: string) => {
@@ -146,9 +158,38 @@ export default function DateTimeSelection({
         );
 
         // Mise à jour des états avec les données reçues
-        setAvailableDates(slots.map((slot) => slot.date));
-        setAvailableDatesObj(slots.map((slot) => new Date(slot.date)));
-        setAvailableSlots(slots);
+        setAvailableDates((prevDates) => {
+          // Fusionner avec les dates existantes sans doublons
+          const allDates = [...prevDates];
+          slots.forEach((slot) => {
+            if (!allDates.includes(slot.date)) {
+              allDates.push(slot.date);
+            }
+          });
+          return allDates;
+        });
+
+        setAvailableDatesObj((prevDates) => {
+          // Fusionner avec les dates existantes sans doublons
+          const existingDatesStr = prevDates.map((d) => formatToYYYYMMDD(d));
+          const newDates = slots
+            .map((slot) => new Date(slot.date))
+            .filter(
+              (date) => !existingDatesStr.includes(formatToYYYYMMDD(date))
+            );
+          return [...prevDates, ...newDates];
+        });
+
+        setAvailableSlots((prevSlots) => {
+          // Fusionner avec les créneaux existants sans doublons
+          const existingSlotKeys = new Set(
+            prevSlots.map((s) => `${s.date}-${s.start}`)
+          );
+          const newSlots = slots.filter(
+            (slot) => !existingSlotKeys.has(`${slot.date}-${slot.start}`)
+          );
+          return [...prevSlots, ...newSlots];
+        });
 
         // Si c'est le chargement initial et que nous avons des dates disponibles, sélectionner la date du jour
         if (!initialLoadComplete && slots.length > 0) {
@@ -161,6 +202,24 @@ export default function DateTimeSelection({
             // Sinon, sélectionner la première date disponible
             selectDate(new Date(slots[0].date));
           }
+        }
+
+        // Ajouter le mois chargé à la liste des mois chargés si un startDate a été fourni
+        if (startDate) {
+          const monthToAdd = new Date(startDate);
+          setLoadedMonths((prev) => {
+            // Vérifier si ce mois est déjà dans la liste
+            if (
+              prev.some(
+                (m) =>
+                  m.getMonth() === monthToAdd.getMonth() &&
+                  m.getFullYear() === monthToAdd.getFullYear()
+              )
+            ) {
+              return prev;
+            }
+            return [...prev, monthToAdd];
+          });
         }
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
@@ -211,12 +270,19 @@ export default function DateTimeSelection({
 
     setLoadingMoreSlots(true);
 
-    // Charger les créneaux pour le mois sélectionné
+    // Charger les créneaux pour le mois sélectionné avec un nombre de jours optimal
     const startDate = new Date(month.getFullYear(), month.getMonth(), 1);
+    // Calculer le nombre de jours dans le mois plutôt qu'utiliser une valeur fixe
+    const daysInMonth = new Date(
+      month.getFullYear(),
+      month.getMonth() + 1,
+      0
+    ).getDate();
+
     fetchAvailableSlots(
       service.durationMinutes || 30,
       formatToYYYYMMDD(startDate),
-      31 // Nombre de jours à charger
+      daysInMonth
     );
   };
 
@@ -235,7 +301,65 @@ export default function DateTimeSelection({
     setSelectedDateObj(date);
   };
 
-  // Fonction pour gérer la sélection d'un créneau pour une réservation multiple
+  // Nouvelle fonction utilitaire pour vérifier si un créneau respecte l'intervalle de 2 semaines
+  const isValidSlotInterval = (
+    newSlot: AvailableSlot,
+    existingSlots: AvailableSlot[]
+  ): boolean => {
+    // Minimum 14 jours (2 semaines) entre chaque séance
+    const MINIMUM_DAYS_BETWEEN_SESSIONS = 14;
+
+    const newDate = new Date(newSlot.date);
+
+    // Cette approche est maintenant harmonisée avec updateInvalidDates
+    for (const slot of existingSlots) {
+      const existingDate = new Date(slot.date);
+      const daysDifference = Math.abs(differenceInDays(newDate, existingDate));
+
+      // Vérifier que la différence est d'au moins 14 jours (2 semaines)
+      if (daysDifference < MINIMUM_DAYS_BETWEEN_SESSIONS) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Fonction pour mettre à jour les dates non valides de manière optimisée
+  const updateInvalidDates = (slots: AvailableSlot[]) => {
+    if (!isMultipleBooking || slots.length === 0) {
+      setInvalidDates([]);
+      return;
+    }
+
+    // Même constante que dans isValidSlotInterval pour cohérence
+    const MINIMUM_DAYS = 14; // 2 semaines
+
+    // Filtrer toutes les dates disponibles en une seule opération
+    const invalidDatesArray = availableDatesObj.filter((date) => {
+      // Ne pas considérer les dates déjà sélectionnées comme invalides
+      if (slots.some((slot) => isSameDay(new Date(slot.date), date))) {
+        return false;
+      }
+
+      // Vérifier si cette date est trop proche d'une date sélectionnée
+      // (utilise la même logique que isValidSlotInterval)
+      for (const slot of slots) {
+        const selectedDate = new Date(slot.date);
+        const daysDifference = Math.abs(differenceInDays(date, selectedDate));
+
+        if (daysDifference < MINIMUM_DAYS) {
+          return true; // Date invalide
+        }
+      }
+
+      return false; // Date valide
+    });
+
+    setInvalidDates(invalidDatesArray);
+  };
+
+  // Fonction mise à jour pour gérer la sélection d'un créneau pour une réservation multiple
   const handleMultipleSlotSelection = (slot: AvailableSlot) => {
     if (!isMultipleBooking || !addMultipleSlot || !removeMultipleSlot) return;
 
@@ -257,15 +381,48 @@ export default function DateTimeSelection({
     if (isSelected) {
       // Si déjà sélectionné, le retirer
       removeMultipleSlot(slot);
+      // Mettre à jour les dates non valides après suppression
+      const updatedSlots = selectedSlots.filter(
+        (s) => s.date !== slot.date || s.start !== slot.start
+      );
+      updateInvalidDates(updatedSlots);
+      // Réinitialiser le message de guidage
+      setGuidanceMessage(
+        selectedSlots.length > 1
+          ? "Sélectionnez des créneaux espacés d'au moins 2 semaines."
+          : null
+      );
     } else {
       // Si pas encore sélectionné, vérifier si on peut l'ajouter
       if (selectedSlots.length < sessionsNeeded) {
-        addMultipleSlot(slot);
+        // Vérifier l'intervalle de 2 semaines avec les créneaux déjà sélectionnés
+        if (
+          selectedSlots.length === 0 ||
+          isValidSlotInterval(slot, selectedSlots)
+        ) {
+          addMultipleSlot(slot);
+          // Mettre à jour les dates non valides après ajout
+          const updatedSlots = [...selectedSlots, slot];
+          updateInvalidDates(updatedSlots);
+          // Mettre à jour le message de guidage
+          setGuidanceMessage(
+            updatedSlots.length < sessionsNeeded
+              ? "Sélectionnez des créneaux espacés d'au moins 2 semaines."
+              : null
+          );
+        } else {
+          setValidationError(
+            "Les séances doivent être espacées d'au moins 2 semaines."
+          );
+          // Effacer le message d'erreur après 3 secondes
+          setTimeout(() => {
+            setValidationError(null);
+          }, 3000);
+        }
       } else {
         setValidationError(
           `Vous ne pouvez sélectionner que ${sessionsNeeded} séances pour ce forfait.`
         );
-
         // Effacer le message d'erreur après 3 secondes
         setTimeout(() => {
           setValidationError(null);
@@ -322,6 +479,68 @@ export default function DateTimeSelection({
     loadInitialSlots();
   }, [service]);
 
+  // Mettre à jour invalidDates quand les créneaux sélectionnés changent
+  useEffect(() => {
+    if (isMultipleBooking) {
+      updateInvalidDates(selectedSlots);
+
+      // Afficher le message de guidage quand l'utilisateur commence à sélectionner des créneaux
+      if (selectedSlots.length > 0 && selectedSlots.length < sessionCount) {
+        setGuidanceMessage(
+          "Sélectionnez des créneaux espacés d'au moins 2 semaines. Les dates avec un point bleu sont disponibles, celles avec un point rose sont trop proches de vos sélections actuelles."
+        );
+      } else if (selectedSlots.length === 0) {
+        setGuidanceMessage(
+          "Sélectionnez votre première séance parmi les dates disponibles (point bleu)."
+        );
+      } else {
+        setGuidanceMessage(null);
+      }
+    }
+  }, [isMultipleBooking, selectedSlots, sessionCount]);
+
+  // Préchargement des mois futurs pour les réservations multiples
+  useEffect(() => {
+    if (isMultipleBooking && initialLoadComplete) {
+      // Précharger les mois pour les prochaines séances (espacées de 2 semaines)
+      const today = new Date();
+      const monthsToLoad: Date[] = [];
+
+      // Calculer le nombre de mois à précharger en fonction du nombre de séances
+      const sessionsNeeded = service.name.includes("4 séances") ? 4 : 6;
+
+      // Ajout des mois prévus pour les séances futures (en estimant une séance toutes les 2 semaines)
+      for (let i = 0; i < Math.ceil(sessionsNeeded / 2); i++) {
+        const futureMonth = new Date(today);
+        futureMonth.setMonth(today.getMonth() + i);
+
+        // Vérifier si ce mois n'est pas déjà chargé
+        if (
+          !loadedMonths.some(
+            (m) =>
+              m.getMonth() === futureMonth.getMonth() &&
+              m.getFullYear() === futureMonth.getFullYear()
+          )
+        ) {
+          monthsToLoad.push(futureMonth);
+        }
+      }
+
+      // Précharger les mois identifiés
+      if (monthsToLoad.length > 0) {
+        console.log(
+          `Préchargement de ${monthsToLoad.length} mois futurs pour réservation multiple`
+        );
+        monthsToLoad.forEach((month) => {
+          setTimeout(
+            () => loadMoreSlots(month),
+            300 * monthsToLoad.indexOf(month)
+          );
+        });
+      }
+    }
+  }, [isMultipleBooking, initialLoadComplete, service.name]);
+
   // Filtrer les créneaux pour la date sélectionnée
   const slotsForSelectedDate = selectedDate
     ? availableSlots.filter((slot) => slot.date === selectedDate)
@@ -368,12 +587,25 @@ export default function DateTimeSelection({
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                 Veuillez sélectionner{" "}
                 {service.name.includes("4 séances") ? "4" : "6"} créneaux pour
-                ce forfait.
+                ce forfait, espacés d'au moins 2 semaines chacun.
               </p>
             )}
           </div>
         </div>
       </div>
+
+      {/* Message de guidage pour la sélection multiple */}
+      {guidanceMessage && (
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm flex items-start">
+          <AlertCircle
+            size={16}
+            className="text-blue-500 dark:text-blue-400 mr-2 mt-0.5 flex-shrink-0"
+          />
+          <span className="text-blue-600 dark:text-blue-400">
+            {guidanceMessage}
+          </span>
+        </div>
+      )}
 
       {/* Message d'erreur de validation */}
       {validationError && (
@@ -391,26 +623,43 @@ export default function DateTimeSelection({
               <div className="space-y-3">
                 <Skeleton className="h-6 w-40" />
                 <div className="grid grid-cols-7 gap-2">
-                  {Array(7).fill(0).map((_, i) => (
-                    <Skeleton key={`day-${i}`} className="h-4 w-full" />
-                  ))}
-                </div>
-                {Array(5).fill(0).map((_, weekIndex) => (
-                  <div key={`week-${weekIndex}`} className="grid grid-cols-7 gap-2">
-                    {Array(7).fill(0).map((_, dayIndex) => (
-                      <Skeleton key={`day-${weekIndex}-${dayIndex}`} className="h-10 w-full rounded-md" />
+                  {Array(7)
+                    .fill(0)
+                    .map((_, i) => (
+                      <Skeleton key={`day-${i}`} className="h-4 w-full" />
                     ))}
-                  </div>
-                ))}
+                </div>
+                {Array(5)
+                  .fill(0)
+                  .map((_, weekIndex) => (
+                    <div
+                      key={`week-${weekIndex}`}
+                      className="grid grid-cols-7 gap-2"
+                    >
+                      {Array(7)
+                        .fill(0)
+                        .map((_, dayIndex) => (
+                          <Skeleton
+                            key={`day-${weekIndex}-${dayIndex}`}
+                            className="h-10 w-full rounded-md"
+                          />
+                        ))}
+                    </div>
+                  ))}
               </div>
-              
+
               {/* Skeleton pour les créneaux horaires */}
               <div className="space-y-3">
                 <Skeleton className="h-6 w-40" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {Array(8).fill(0).map((_, i) => (
-                    <Skeleton key={`slot-${i}`} className="h-16 w-full rounded-md" />
-                  ))}
+                  {Array(8)
+                    .fill(0)
+                    .map((_, i) => (
+                      <Skeleton
+                        key={`slot-${i}`}
+                        className="h-16 w-full rounded-md"
+                      />
+                    ))}
                 </div>
               </div>
             </div>
@@ -460,13 +709,23 @@ export default function DateTimeSelection({
                     {loadingMoreSlots && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10 rounded-lg">
                         <div className="space-y-2 w-full p-4">
-                          {Array(3).fill(0).map((_, weekIndex) => (
-                            <div key={`loading-week-${weekIndex}`} className="grid grid-cols-7 gap-1">
-                              {Array(7).fill(0).map((_, dayIndex) => (
-                                <Skeleton key={`loading-day-${weekIndex}-${dayIndex}`} className="h-8 w-full rounded-md" />
-                              ))}
-                            </div>
-                          ))}
+                          {Array(3)
+                            .fill(0)
+                            .map((_, weekIndex) => (
+                              <div
+                                key={`loading-week-${weekIndex}`}
+                                className="grid grid-cols-7 gap-1"
+                              >
+                                {Array(7)
+                                  .fill(0)
+                                  .map((_, dayIndex) => (
+                                    <Skeleton
+                                      key={`loading-day-${weekIndex}-${dayIndex}`}
+                                      className="h-8 w-full rounded-md"
+                                    />
+                                  ))}
+                              </div>
+                            ))}
                         </div>
                       </div>
                     )}
@@ -479,7 +738,11 @@ export default function DateTimeSelection({
                         disabled={[
                           { before: new Date() },
                           (date) =>
-                            !availableDatesObj.some((d) => isSameDay(d, date)),
+                            !availableDatesObj.some((d) =>
+                              isSameDay(d, date)
+                            ) ||
+                            (isMultipleBooking &&
+                              invalidDates.some((d) => isSameDay(d, date))),
                         ]}
                         locale={fr}
                         numberOfMonths={1}
@@ -498,9 +761,11 @@ export default function DateTimeSelection({
                         }}
                         modifiers={{
                           available: availableDatesObj,
+                          invalid: invalidDates,
                         }}
                         modifiersClassNames={{
                           available: "has-available-slots",
+                          invalid: "has-invalid-interval",
                         }}
                         components={{
                           IconLeft: () => <ChevronLeft className="h-4 w-4" />,
@@ -519,7 +784,11 @@ export default function DateTimeSelection({
                         disabled={[
                           { before: new Date() },
                           (date) =>
-                            !availableDatesObj.some((d) => isSameDay(d, date)),
+                            !availableDatesObj.some((d) =>
+                              isSameDay(d, date)
+                            ) ||
+                            (isMultipleBooking &&
+                              invalidDates.some((d) => isSameDay(d, date))),
                         ]}
                         locale={fr}
                         numberOfMonths={2}
@@ -538,9 +807,11 @@ export default function DateTimeSelection({
                         }}
                         modifiers={{
                           available: availableDatesObj,
+                          invalid: invalidDates,
                         }}
                         modifiersClassNames={{
                           available: "has-available-slots",
+                          invalid: "has-invalid-interval",
                         }}
                         components={{
                           IconLeft: () => <ChevronLeft className="h-4 w-4" />,
@@ -551,7 +822,9 @@ export default function DateTimeSelection({
                     </div>
                   </div>
                   <div className="mt-2 text-xs italic text-gray-500 dark:text-gray-400">
-                    Naviguez dans le calendrier pour voir plus de disponibilités
+                    {isMultipleBooking
+                      ? "Point bleu = date disponible | Point rose = date trop proche de vos séances déjà sélectionnées"
+                      : "Naviguez dans le calendrier pour voir plus de disponibilités"}
                   </div>
                 </div>
 

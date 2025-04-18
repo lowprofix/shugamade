@@ -10,7 +10,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background-color: #4ade80; /* Couleur verte pour l'indicateur */
+  background-color: #bfe0fb; /* Changé à bleu pour être cohérent avec le reste */
 }
 
 /* Règles générales pour les calendriers */
@@ -89,4 +89,48 @@
     min-width: 280px;
     max-width: 350px;
   }
+}
+
+/* Styles pour les indicateurs de disponibilité */
+
+/* Indicateur pour les jours avec des créneaux disponibles */
+.has-available-slots:not([disabled]) {
+  position: relative;
+}
+
+.has-available-slots:not([disabled])::after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #bfe0fb;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Indicateur pour les jours qui ne respectent pas l'intervalle de 2 semaines */
+.has-invalid-interval:not([disabled]) {
+  position: relative;
+  opacity: 0.5;
+}
+
+/* S'assurer que les jours invalides n'affichent pas le voyant bleu */
+.has-invalid-interval:not([disabled])::after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #ffb2dd;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Règle spécifique pour s'assurer que les dates à la fois disponibles et invalides 
+   affichent le point rose et non le point bleu */
+.has-available-slots.has-invalid-interval:not([disabled])::after {
+  background-color: #ffb2dd;
 }

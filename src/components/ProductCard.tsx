@@ -55,7 +55,7 @@ export function ProductCard({
           {product.stock > 5 ? (
             <span>En stock</span>
           ) : product.stock > 0 ? (
-            <span>Stock limité: {product.stock}</span>
+            <span>Stock limité</span>
           ) : (
             <span>Épuisé</span>
           )}
@@ -103,10 +103,9 @@ export function ProductCard({
               isSelected
                 ? "bg-gradient-to-r from-[#bfe0fb] to-[#9deaff] text-white hover:shadow-[#9deaff]/20 hover:shadow-md"
                 : product.stock === 0
-                ? "border-gray-300 text-gray-400 cursor-not-allowed"
+                ? "border-red-300 text-red-400"
                 : "border-[#bfe0fb] text-[#bfe0fb] hover:bg-[#bfe0fb]/10"
             )}
-            disabled={product.stock === 0}
           >
             {isSelected ? (
               <>
@@ -116,7 +115,7 @@ export function ProductCard({
             ) : product.stock === 0 ? (
               <>
                 <X className="w-4 h-4 mr-1" />
-                Indisponible
+                Commander
               </>
             ) : (
               <>

@@ -13,16 +13,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Sparkles,
-  ShoppingCart,
-  X,
-  Check,
-  Info,
-  Leaf,
-  Pill,
-  Droplets,
-} from "lucide-react";
+import { Sparkles, ShoppingCart, X, Info, Pill, Droplets } from "lucide-react";
 import { Product, products, contactInfo } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +83,7 @@ export default function ProductsSection({
     { id: "all", label: "Tous les produits", icon: Sparkles },
     { id: "supplements", label: "Compléments", icon: Pill },
     { id: "oils", label: "Huiles", icon: Droplets },
-    { id: "natural", label: "Naturels", icon: Leaf },
+    { id: "accessories", label: "Accessoires", icon: ShoppingCart },
   ];
 
   // Fonction pour récupérer les données de stock
@@ -172,24 +163,15 @@ export default function ProductsSection({
     switch (selectedCategory) {
       case "supplements":
         return productsToFilter.filter(
-          (product) =>
-            product.name.toLowerCase().includes("oméga") ||
-            product.name.toLowerCase().includes("complexe") ||
-            product.name.toLowerCase().includes("spiruline") ||
-            product.name.toLowerCase().includes("fer")
+          (product) => product.category === "supplements"
         );
       case "oils":
         return productsToFilter.filter(
-          (product) =>
-            product.name.toLowerCase().includes("huile") ||
-            product.name.toLowerCase().includes("sérum")
+          (product) => product.category === "oils"
         );
-      case "natural":
+      case "accessories":
         return productsToFilter.filter(
-          (product) =>
-            product.name.toLowerCase().includes("bio") ||
-            product.name.toLowerCase().includes("naturel") ||
-            product.name.toLowerCase().includes("spray")
+          (product) => product.category === "accessories"
         );
       default:
         return productsToFilter;
@@ -203,11 +185,6 @@ export default function ProductsSection({
 
   // Ajouter ou retirer un produit du panier
   const toggleProductSelection = (product: Product) => {
-    // Ne pas permettre de sélectionner un produit en rupture de stock
-    if (product.stock === 0) {
-      return;
-    }
-
     if (isProductSelected(product.id)) {
       setSelectedProducts(selectedProducts.filter((p) => p.id !== product.id));
     } else {
@@ -224,7 +201,15 @@ export default function ProductsSection({
     let message = "Bonjour, je souhaite commander les produits suivants :\n\n";
 
     selectedProducts.forEach((product) => {
-      message += `- ${product.name} (${product.price})\n`;
+      // Ajouter un indicateur de stock pour chaque produit
+      const stockStatus =
+        product.stock === 0
+          ? " [RUPTURE DE STOCK]"
+          : product.stock && product.stock <= 5
+          ? " [STOCK LIMITÉ]"
+          : "";
+
+      message += `- ${product.name} (${product.price})${stockStatus}\n`;
     });
 
     message += "\nMerci de me contacter pour finaliser ma commande.";

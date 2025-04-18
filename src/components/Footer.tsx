@@ -244,6 +244,25 @@ export default function Footer({ scrollToSection }: FooterProps) {
           <Heart className="w-3 h-3 mx-1 text-[#ffb2dd] animate-pulse-slow" />
           <span>par ShugaMade</span>
         </div>
+
+        {/* Liens légaux */}
+        <div className="text-center mt-4 text-xs text-gray-500 dark:text-gray-500">
+          <div className="flex justify-center space-x-4">
+            <Link
+              href="/politique-confidentialite"
+              className="hover:text-[#ffb2dd] transition-colors duration-300"
+            >
+              Politique de confidentialité
+            </Link>
+            <span>•</span>
+            <Link
+              href="/conditions-utilisation"
+              className="hover:text-[#ffb2dd] transition-colors duration-300"
+            >
+              Conditions d'utilisation
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

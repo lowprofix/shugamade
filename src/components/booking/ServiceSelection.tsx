@@ -128,85 +128,91 @@ export default function ServiceSelection({
         </div>
       </div>
       
-      {/* Liste des services */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Liste des services optimisée */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {filteredServices.length > 0 ? (
           filteredServices.map((service) => (
-            <Card 
-              key={service.id} 
+            <Card
+              key={service.id}
               className={cn(
-                "group overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer border-none",
-                service.isPromo 
-                  ? "bg-gradient-to-br from-white to-[#ffb2dd]/5 dark:from-gray-900 dark:to-[#ffb2dd]/10" 
+                "group overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer border-none p-0",
+                service.isPromo
+                  ? "bg-gradient-to-br from-white to-[#ffb2dd]/5 dark:from-gray-900 dark:to-[#ffb2dd]/10"
                   : "bg-gradient-to-br from-white to-[#bfe0fb]/5 dark:from-gray-900 dark:to-[#bfe0fb]/10"
               )}
               onClick={() => onSelectService(service)}
             >
               {/* Barre de couleur en haut de la carte */}
-              <div className={cn(
-                "h-1 w-full",
-                service.isPromo 
-                  ? "bg-gradient-to-r from-[#e2b3f7] to-[#ffb2dd]" 
-                  : "bg-gradient-to-r from-[#bfe0fb] to-[#9deaff]"
-              )} />
-              
-              <CardContent className="p-5">
-                <div className="flex flex-col h-full">
+              <div
+                className={cn(
+                  "h-1 w-full",
+                  service.isPromo
+                    ? "bg-gradient-to-r from-[#e2b3f7] to-[#ffb2dd]"
+                    : "bg-gradient-to-r from-[#bfe0fb] to-[#9deaff]"
+                )}
+              />
+              <CardContent className="p-3">
+                <div className="flex flex-col h-full min-h-[155px]">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="font-medium text-gray-800 dark:text-white text-sm line-clamp-1 mr-2">
+                      {service.name}
+                    </h4>
+                    <span
+                      className={cn(
+                        "font-semibold text-xs ml-auto whitespace-nowrap",
+                        service.isPromo ? "text-[#ffb2dd]" : "text-[#9deaff]"
+                      )}
+                    >
+                      {service.price}
+                    </span>
+                  </div>
                   {service.isPromo && (
-                    <div className="inline-flex self-start items-center px-2 py-1 mb-2 text-xs font-medium text-white bg-gradient-to-r from-[#e2b3f7] to-[#ffb2dd] rounded-full">
-                      {service.name.includes("4 séances") ? "4 séances" : service.name.includes("6 séances") ? "6 séances" : "Forfait"}
+                    <div className="inline-flex self-start items-center px-2 py-0.5 mb-1 text-[10px] font-medium text-white bg-gradient-to-r from-[#e2b3f7] to-[#ffb2dd] rounded-full">
+                      {service.name.includes("4 séances")
+                        ? "4 séances"
+                        : service.name.includes("6 séances")
+                        ? "6 séances"
+                        : "Forfait"}
                     </div>
                   )}
-                  
-                  <h4 className="font-medium text-gray-800 dark:text-white mb-2">{service.name}</h4>
-                  
                   {service.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+                    <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 line-clamp-1" title={service.description}>
                       {service.description}
                     </p>
                   )}
-                  
-                  <div className="flex items-center mt-1 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    <Clock size={14} className="mr-1 flex-shrink-0" />
+                  <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <Clock size={12} className="mr-1 flex-shrink-0" />
                     <span>{service.duration}</span>
                   </div>
-                  
                   {service.includes && service.includes.length > 0 && (
-                    <div className="mt-2 mb-3">
-                      <ul className="space-y-1">
+                    <div className="mb-1">
+                      <ul className="flex flex-wrap gap-x-2 gap-y-0.5">
                         {service.includes.slice(0, 2).map((item, index) => (
-                          <li key={index} className="flex items-start text-xs text-gray-600 dark:text-gray-400">
-                            <Check className="w-3 h-3 mt-0.5 mr-1 text-[#9deaff]" />
-                            <span>{item}</span>
+                          <li key={index} className="flex items-center text-[10px] text-gray-600 dark:text-gray-400">
+                            <Check className="w-3 h-3 mr-1 text-[#9deaff]" />
+                            <span className="truncate" title={item}>{item}</span>
                           </li>
                         ))}
                         {service.includes.length > 2 && (
-                          <li className="text-xs text-gray-500 dark:text-gray-400 italic">
-                            + {service.includes.length - 2} autres inclus
+                          <li className="text-[10px] text-gray-500 dark:text-gray-400 italic">
+                            +{service.includes.length - 2}
                           </li>
                         )}
                       </ul>
                     </div>
                   )}
-                  
-                  <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                    <span className={cn(
-                      "font-medium",
-                      service.isPromo ? "text-[#ffb2dd]" : "text-[#9deaff]"
-                    )}>
-                      {service.price}
-                    </span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                  <div className="flex justify-end mt-auto">
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className={cn(
-                        "group-hover:translate-x-1 transition-transform duration-300 p-1",
-                        service.isPromo 
-                          ? "text-[#ffb2dd] hover:text-[#e2b3f7] hover:bg-[#ffb2dd]/10" 
+                        "p-1 h-7 w-7 group-hover:translate-x-0.5 transition-transform duration-300",
+                        service.isPromo
+                          ? "text-[#ffb2dd] hover:text-[#e2b3f7] hover:bg-[#ffb2dd]/10"
                           : "text-[#9deaff] hover:text-[#bfe0fb] hover:bg-[#9deaff]/10"
                       )}
                     >
-                      <ArrowRight size={16} />
+                      <ArrowRight size={14} />
                     </Button>
                   </div>
                 </div>
@@ -214,10 +220,10 @@ export default function ServiceSelection({
             </Card>
           ))
         ) : (
-          <div className="col-span-2 p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="col-span-2 md:col-span-3 lg:col-span-4 p-8 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <p>Aucun service ne correspond à votre recherche.</p>
-            <Button 
-              variant="link" 
+            <Button
+              variant="link"
               onClick={() => {
                 setSearchTerm("");
                 setActiveCategory(null);

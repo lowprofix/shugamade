@@ -481,7 +481,7 @@ export const bookingConditions = {
   preparation:
     "Cheveux propres : Avant votre séance, assurez-vous que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).",
   deposit:
-    "Acompte obligatoire : Un acompte de 5 000 FCFA est requis pour confirmer votre réservation, le MoMo est à faire sur le 06 597 56 23 ou le Airtel au 05 05 092 89 99. Sans cet acompte, la réservation ne sera pas prise en compte.",
+    "Acompte obligatoire : Un acompte de 5 000 FCFA est requis pour confirmer votre réservation, le MoMo est à faire sur le 06 597 56 23 ou le Airtel au 05 092 89 99. Sans cet acompte, la réservation ne sera pas prise en compte.",
   punctuality:
     "Ponctualité : Merci d'arriver à l'heure. Un retard de plus de 15 minutes peut entraîner l'annulation de la séance sans possibilité de remboursement de l'acompte.",
   cancellation:

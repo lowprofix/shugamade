@@ -13,26 +13,29 @@ import CustomerFormSkeleton from "@/components/skeletons/CustomerFormSkeleton";
 import BookingStepIndicator from "./BookingStepIndicator";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 // Type pour les créneaux disponibles
 export interface AvailableSlot {
-  date: string;      // Format YYYY-MM-DD
-  start: string;     // Format HH:MM
-  end: string;       // Format HH:MM
-  duration: number;  // Durée en minutes
+  date: string; // Format YYYY-MM-DD
+  start: string; // Format HH:MM
+  end: string; // Format HH:MM
+  duration: number; // Durée en minutes
 }
 
 // Type pour les réservations multiples (pour les packs promo)
 export interface MultipleBooking {
   slots: AvailableSlot[];
   sessionCount: number; // Nombre de séances (4 ou 6)
-  serviceType: string;  // Type de service ("Tempes" ou "Tête entière")
+  serviceType: string; // Type de service ("Tempes" ou "Tête entière")
 }
 
 // Type pour les informations client
 export interface CustomerInfo {
   name: string;
   phone: string;
+  phoneCountryCode: string; // Nouvel indicatif téléphonique
   email?: string;
 }
 
@@ -40,18 +43,27 @@ interface BookingClientWrapperProps {
   services: ServiceType[];
 }
 
-export default function BookingClientWrapper({ services }: BookingClientWrapperProps) {
+export default function BookingClientWrapper({
+  services,
+}: BookingClientWrapperProps) {
   // États pour gérer le processus de réservation
   const [bookingStep, setBookingStep] = useState(1);
-  const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
+  const [selectedService, setSelectedService] = useState<ServiceType | null>(
+    null
+  );
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<AvailableSlot[]>([]);
   const [isMultipleBooking, setIsMultipleBooking] = useState(false);
-  const [multipleBooking, setMultipleBooking] = useState<MultipleBooking | null>(null);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: "", phone: "" });
+  const [multipleBooking, setMultipleBooking] =
+    useState<MultipleBooking | null>(null);
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    name: "",
+    phone: "",
+    phoneCountryCode: "+242", // Indicatif Congo Brazzaville par défaut
+  });
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
-  
+
   // États pour les transitions et animations
   const [isPending, startTransition] = useTransition();
   const [fadeOut, setFadeOut] = useState(false);
@@ -59,23 +71,25 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
   // Fonction pour sélectionner un service
   const selectService = (service: ServiceType) => {
     setFadeOut(true);
-    
+
     // Délai pour l'animation de transition
     setTimeout(() => {
       setSelectedService(service);
-      
+
       // Vérifier si c'est un service de type "Promo Pack"
-      const isPromoPackService = service.isPromo && 
-        (service.name.includes("Promo 4 séances") || service.name.includes("Promo 6 séances"));
-      
+      const isPromoPackService =
+        service.isPromo &&
+        (service.name.includes("Promo 4 séances") ||
+          service.name.includes("Promo 6 séances"));
+
       // S'assurer que isPromoPackService est toujours un booléen
       setIsMultipleBooking(isPromoPackService === true);
-      
+
       // Réinitialiser les slots sélectionnés
       setSelectedSlots([]);
       setSelectedSlot(null);
       setMultipleBooking(null);
-      
+
       startTransition(() => {
         setBookingStep(2);
         setFadeOut(false);
@@ -88,7 +102,7 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
     if (!isMultipleBooking) {
       // Réservation simple
       setFadeOut(true);
-      
+
       // Délai pour l'animation de transition
       setTimeout(() => {
         setSelectedSlot(slot);
@@ -103,113 +117,226 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
       // et utilisera addMultipleSlot ci-dessous
     }
   };
-  
+
   // Fonction pour ajouter un créneau à une réservation multiple
   const addMultipleSlot = (slot: AvailableSlot) => {
-    setSelectedSlots(prev => [...prev, slot]);
+    setSelectedSlots((prev) => [...prev, slot]);
   };
-  
+
   // Fonction pour supprimer un créneau d'une réservation multiple
   const removeMultipleSlot = (slotToRemove: AvailableSlot) => {
-    setSelectedSlots(prev => prev.filter(slot => 
-      !(slot.date === slotToRemove.date && slot.start === slotToRemove.start)
-    ));
+    setSelectedSlots((prev) =>
+      prev.filter(
+        (slot) =>
+          !(
+            slot.date === slotToRemove.date && slot.start === slotToRemove.start
+          )
+      )
+    );
   };
-  
+
   // Fonction pour confirmer la sélection de créneaux multiples
   const confirmMultipleSlots = (sessionCount: number, serviceType: string) => {
     setFadeOut(true);
-    
+
     // Délai pour l'animation de transition
     setTimeout(() => {
       setMultipleBooking({
         slots: selectedSlots,
         sessionCount,
-        serviceType
+        serviceType,
       });
-      
+
       startTransition(() => {
         setBookingStep(3);
         setFadeOut(false);
       });
     }, 300);
   };
-  
+
   // Fonction pour gérer les changements dans les informations client
-  const handleCustomerInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomerInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleCustomerInfoChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setCustomerInfo((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
-  
+
+  // Fonction pour envoyer un message WhatsApp de confirmation
+  const sendWhatsAppConfirmation = async (
+    customer: CustomerInfo,
+    service: ServiceType,
+    booking: { slots: AvailableSlot[] }
+  ) => {
+    if (!booking.slots.length) return;
+
+    try {
+      // Construire le message de confirmation avec le nouveau format
+      let message = `Bonjour ${customer.name},\n\n`;
+      message += `Nous vous confirmons votre réservation pour votre séance de ${service.name}.\n\n`;
+
+      // Ajouter les détails des créneaux réservés
+      if (booking.slots.length === 1) {
+        const slot = booking.slots[0];
+        const date = new Date(slot.date);
+        const formattedDate = format(date, "d MMMM", { locale: fr });
+        message += `📅 Date et heure : ${formattedDate} à ${slot.start.replace(
+          ":00",
+          "h00"
+        )}\n\n`;
+      } else if (booking.slots.length > 1) {
+        message += "📅 Dates réservées :\n";
+        booking.slots.forEach((slot, index) => {
+          const date = new Date(slot.date);
+          const formattedDate = format(date, "d MMMM", { locale: fr });
+          message += `${index + 1}. ${formattedDate} à ${slot.start.replace(
+            ":00",
+            "h00"
+          )}\n`;
+        });
+        message += "\n";
+      }
+
+      // Ajouter les informations de préparation
+      message += "🔹 Préparation avant la séance\n";
+      message +=
+        "✅ Cheveux propres et sans produit : Merci de vous assurer que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).\n\n";
+
+      // Informations sur la ponctualité
+      message += "⏳ Ponctualité\n";
+      message +=
+        "• Merci d'arriver à l'heure afin de profiter pleinement de votre séance.\n";
+      message +=
+        "• Un retard de plus de 30 minutes entraînera l'annulation de la séance sans possibilité de remboursement de l'acompte.\n\n";
+
+      // Informations sur l'annulation et le report
+      message += "❌ Annulation & Report\n";
+      message +=
+        "• Toute annulation ou report doit être signalé au moins 24h à l'avance.\n";
+      message +=
+        "• Au-delà de ce délai, l'acompte ne pourra pas être remboursé.\n\n";
+
+      // Ajouter les informations sur l'acompte
+      message += "💰 Acompte\n";
+      message +=
+        "• Un acompte de 5 000 FCFA est requis pour confirmer définitivement votre réservation.\n";
+      message += "• Modes de paiement acceptés :\n";
+      message += "  - Mobile Money: +242 06 597 56 23\n";
+      message += "  - Airtel Money: +242 05 092 89 99\n\n";
+      message +=
+        "• A noter: L'accompte sera bien entendu déduit du montant total de la prestation.\n\n";
+
+      // Message de conclusion
+      message += "Si vous avez des questions, n'hésitez pas à me contacter.\n";
+      message += "À très bientôt !\n\n";
+      message += "Eunice – SHUGAMADE\n";
+      message += "📞 +242 06 536 67 16";
+
+      // Préparer les données pour l'API WhatsApp
+      const whatsappData = {
+        phoneNumber: customer.phoneCountryCode + customer.phone, // Numéro complet avec indicatif
+        message: message,
+      };
+
+      // Appeler l'API WhatsApp
+      const response = await fetch("/api/whatsapp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(whatsappData),
+      });
+
+      if (!response.ok) {
+        console.warn(
+          "Échec de l'envoi du message WhatsApp, mais la réservation est confirmée:",
+          await response.text()
+        );
+      } else {
+        console.log("Message WhatsApp de confirmation envoyé avec succès");
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi du message WhatsApp:", error);
+    }
+  };
+
   // Fonction pour confirmer la réservation
   const confirmBooking = async () => {
     setFadeOut(true);
     setBookingError(null);
-    
+
     try {
       // 1. Créer d'abord le client dans Hiboutik
       let hiboutikClientId = null;
-      
+
       // Préparer les données du client pour Hiboutik
       const hiboutikClientData = {
-        customers_first_name: customerInfo.name.split(' ')[0] || customerInfo.name,
-        customers_last_name: customerInfo.name.split(' ').slice(1).join(' ') || '',
-        customers_phone_number: customerInfo.phone,
-        customers_email: customerInfo.email || ''
+        customers_first_name:
+          customerInfo.name.split(" ")[0] || customerInfo.name,
+        customers_last_name:
+          customerInfo.name.split(" ").slice(1).join(" ") || "",
+        customers_phone_number:
+          customerInfo.phoneCountryCode + customerInfo.phone,
+        customers_email: customerInfo.email || "",
       };
-      
+
       try {
         // Appeler l'API Hiboutik pour créer le client
-        const hiboutikResponse = await fetch('/api/hiboutik/clients', {
-          method: 'POST',
+        const hiboutikResponse = await fetch("/api/hiboutik/clients", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify(hiboutikClientData)
+          body: JSON.stringify(hiboutikClientData),
         });
-        
+
         if (!hiboutikResponse.ok) {
-          console.warn('Échec de la création du client dans Hiboutik, mais la réservation continuera:', 
-            await hiboutikResponse.text());
+          console.warn(
+            "Échec de la création du client dans Hiboutik, mais la réservation continuera:",
+            await hiboutikResponse.text()
+          );
         } else {
           const hiboutikData = await hiboutikResponse.json();
           hiboutikClientId = hiboutikData.customers_id;
-          console.log('Client créé dans Hiboutik avec ID:', hiboutikClientId);
+          console.log("Client créé dans Hiboutik avec ID:", hiboutikClientId);
         }
       } catch (hiboutikError) {
-        console.warn('Erreur lors de la création du client dans Hiboutik, mais la réservation continuera:', 
-          hiboutikError);
+        console.warn(
+          "Erreur lors de la création du client dans Hiboutik, mais la réservation continuera:",
+          hiboutikError
+        );
       }
-      
-      // 2. Préparer les données de réservation (comme avant, mais avec l'ID Hiboutik)
-      // Créer une copie des données client pour ne pas modifier la structure originale
+
+      // 2. Préparer les données de réservation
       const customerInfoWithHiboutik = { ...customerInfo };
-      
+
       // Ajouter l'ID Hiboutik dans un champ séparé qui n'affectera pas la structure existante
       const bookingData = {
         title: `Réservation - ${selectedService?.name} - ${customerInfo.name}`,
-        description: `Réservation pour ${customerInfo.name}, Tél: ${customerInfo.phone}${customerInfo.email ? `, Email: ${customerInfo.email}` : ''}`,
+        description: `Réservation pour ${customerInfo.name}, Tél: ${
+          customerInfo.phoneCountryCode + customerInfo.phone
+        }${customerInfo.email ? `, Email: ${customerInfo.email}` : ""}`,
         service: selectedService,
         customer: customerInfoWithHiboutik,
         isPartOfPackage: isMultipleBooking,
         // Ajouter l'ID Hiboutik dans un champ séparé qui n'affectera pas la structure existante
-        hiboutikClientId: hiboutikClientId
+        hiboutikClientId: hiboutikClientId,
       };
-      
+
       // Utiliser un timeout pour les requêtes
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes de timeout
-      
+
       try {
         if (isMultipleBooking && multipleBooking) {
           // Réservation multiple
           const bookingPromises = multipleBooking.slots.map(async (slot) => {
             const startDateTime = `${slot.date}T${slot.start}:00+01:00`;
             const endDateTime = `${slot.date}T${slot.end}:00+01:00`;
-            
-            const response = await fetch('/api/create-booking', {
-              method: 'POST',
+
+            const response = await fetch("/api/create-booking", {
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
               },
               body: JSON.stringify({
                 ...bookingData,
@@ -217,103 +344,133 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
                 end: endDateTime,
                 packageInfo: {
                   sessionCount: multipleBooking.sessionCount,
-                  serviceType: multipleBooking.serviceType
-                }
+                  serviceType: multipleBooking.serviceType,
+                },
               }),
-              signal: controller.signal
+              signal: controller.signal,
             });
-            
+
             if (!response.ok) {
               const errorText = await response.text();
               throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
             }
-            
+
             return response.json();
           });
-          
+
           // Attendre que toutes les réservations soient créées
           const results = await Promise.all(bookingPromises);
-          console.log('Résultats des réservations multiples:', results);
-          
+          console.log("Résultats des réservations multiples:", results);
+
           // Vérifier si l'une des réservations a échoué
-          const failedBooking = results.find(result => !result.success);
+          const failedBooking = results.find((result) => !result.success);
           if (failedBooking) {
-            throw new Error(failedBooking.error || 'Une des réservations a échoué');
+            throw new Error(
+              failedBooking.error || "Une des réservations a échoué"
+            );
           }
         } else if (selectedSlot) {
           // Réservation simple
           const startDateTime = `${selectedSlot.date}T${selectedSlot.start}:00+01:00`;
           const endDateTime = `${selectedSlot.date}T${selectedSlot.end}:00+01:00`;
-          
-          const response = await fetch('/api/create-booking', {
-            method: 'POST',
+
+          const response = await fetch("/api/create-booking", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               ...bookingData,
               start: startDateTime,
-              end: endDateTime
+              end: endDateTime,
             }),
-            signal: controller.signal
+            signal: controller.signal,
           });
-          
+
           if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
           }
-          
+
           const result = await response.json();
-          console.log('Résultat de la réservation:', result);
-          
+          console.log("Résultat de la réservation:", result);
+
           if (!result.success) {
-            throw new Error(result.error || 'La réservation a échoué');
+            throw new Error(result.error || "La réservation a échoué");
           }
         }
-        
+
         clearTimeout(timeoutId);
-        
+
         // Passer à l'étape de confirmation
         setBookingConfirmed(true);
         startTransition(() => {
           setBookingStep(4);
           setFadeOut(false);
         });
+
+        // Envoyer un message WhatsApp de confirmation
+        if (selectedService) {
+          if (
+            isMultipleBooking &&
+            multipleBooking &&
+            multipleBooking.slots.length > 0
+          ) {
+            sendWhatsAppConfirmation(customerInfo, selectedService, {
+              slots: multipleBooking.slots,
+            });
+          } else if (selectedSlot) {
+            sendWhatsAppConfirmation(customerInfo, selectedService, {
+              slots: [selectedSlot],
+            });
+          }
+        }
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
       }
     } catch (error: any) {
-      console.error('Erreur lors de la création de la réservation:', error);
-      
+      console.error("Erreur lors de la création de la réservation:", error);
+
       // Détection des types d'erreurs spécifiques
-      if (error.name === 'AbortError') {
-        setBookingError("Le serveur met trop de temps à répondre. Veuillez réessayer ultérieurement.");
-      } else if (error.message?.includes('fetch failed') || error.cause?.code === 'ENOTFOUND') {
-        setBookingError("Impossible de se connecter au serveur de réservation. Le serveur semble être indisponible. Veuillez réessayer plus tard ou nous contacter directement.");
-      } else if (error.message?.includes('Erreur HTTP: 500')) {
-        setBookingError("Le serveur a rencontré une erreur lors du traitement de votre réservation. Veuillez réessayer ou nous contacter directement.");
+      if (error.name === "AbortError") {
+        setBookingError(
+          "Le serveur met trop de temps à répondre. Veuillez réessayer ultérieurement."
+        );
+      } else if (
+        error.message?.includes("fetch failed") ||
+        error.cause?.code === "ENOTFOUND"
+      ) {
+        setBookingError(
+          "Impossible de se connecter au serveur de réservation. Le serveur semble être indisponible. Veuillez réessayer plus tard ou nous contacter directement."
+        );
+      } else if (error.message?.includes("Erreur HTTP: 500")) {
+        setBookingError(
+          "Le serveur a rencontré une erreur lors du traitement de votre réservation. Veuillez réessayer ou nous contacter directement."
+        );
       } else {
-        setBookingError("Une erreur est survenue lors de la création de votre réservation. Veuillez réessayer.");
+        setBookingError(
+          "Une erreur est survenue lors de la création de votre réservation. Veuillez réessayer."
+        );
       }
-      
+
       setFadeOut(false);
     }
   };
-  
+
   // Fonction pour revenir à l'étape précédente
   const goBack = () => {
     setFadeOut(true);
-    
+
     // Délai pour l'animation de transition
     setTimeout(() => {
       if (bookingStep === 3 && isMultipleBooking) {
         // Si on est à l'étape 3 avec une réservation multiple, on revient à l'étape 2
         setMultipleBooking(null);
       }
-      
+
       startTransition(() => {
-        setBookingStep(prev => Math.max(1, prev - 1));
+        setBookingStep((prev) => Math.max(1, prev - 1));
         setFadeOut(false);
       });
     }, 300);
@@ -324,39 +481,51 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
     { id: 1, label: "Service", icon: "service" },
     { id: 2, label: "Date & Heure", icon: "calendar" },
     { id: 3, label: "Vos Informations", icon: "user" },
-    { id: 4, label: "Confirmation", icon: "check" }
+    { id: 4, label: "Confirmation", icon: "check" },
   ];
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
       {/* Indicateur d'étape */}
       <div className="px-6 pt-6 pb-2">
-        <BookingStepIndicator 
-          steps={steps} 
-          currentStep={bookingStep} 
+        <BookingStepIndicator
+          steps={steps}
+          currentStep={bookingStep}
           isPending={isPending}
         />
       </div>
-      
+
       <div className="p-6">
         {bookingStep === 1 && (
-          <div className={`transition-all duration-300 ${fadeOut ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'}`}>
+          <div
+            className={`transition-all duration-300 ${
+              fadeOut
+                ? "opacity-0 transform translate-y-4"
+                : "opacity-100 transform translate-y-0"
+            }`}
+          >
             <Suspense fallback={<ServicesSkeleton />}>
-              <ServiceSelection 
-                services={services} 
-                onSelectService={selectService} 
+              <ServiceSelection
+                services={services}
+                onSelectService={selectService}
               />
             </Suspense>
           </div>
         )}
 
         {bookingStep === 2 && selectedService && (
-          <div className={`transition-all duration-300 ${fadeOut ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'}`}>
+          <div
+            className={`transition-all duration-300 ${
+              fadeOut
+                ? "opacity-0 transform translate-y-4"
+                : "opacity-100 transform translate-y-0"
+            }`}
+          >
             <Suspense fallback={<CalendarSkeleton />}>
-              <DateTimeSelection 
-                service={selectedService} 
-                onSelectSlot={selectSlot} 
-                onBack={goBack} 
+              <DateTimeSelection
+                service={selectedService}
+                onSelectSlot={selectSlot}
+                onBack={goBack}
                 isMultipleBooking={isMultipleBooking}
                 selectedSlots={selectedSlots}
                 addMultipleSlot={addMultipleSlot}
@@ -368,7 +537,13 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
         )}
 
         {bookingStep === 3 && selectedService && (
-          <div className={`transition-all duration-300 ${fadeOut ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'}`}>
+          <div
+            className={`transition-all duration-300 ${
+              fadeOut
+                ? "opacity-0 transform translate-y-4"
+                : "opacity-100 transform translate-y-0"
+            }`}
+          >
             <Suspense fallback={<CustomerFormSkeleton />}>
               {bookingError ? (
                 <div className="mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -377,19 +552,29 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
                       <Info className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 dark:text-red-400" />
                     </div>
                     <div className="flex-1 text-center sm:text-left">
-                      <h3 className="text-base sm:text-lg font-medium text-red-800 dark:text-red-300 mb-1 sm:mb-2">Erreur de réservation</h3>
-                      <p className="text-sm sm:text-base text-red-600 dark:text-red-400 mb-2 sm:mb-3">{bookingError}</p>
+                      <h3 className="text-base sm:text-lg font-medium text-red-800 dark:text-red-300 mb-1 sm:mb-2">
+                        Erreur de réservation
+                      </h3>
+                      <p className="text-sm sm:text-base text-red-600 dark:text-red-400 mb-2 sm:mb-3">
+                        {bookingError}
+                      </p>
                       <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
-                        Si le problème persiste, vous pouvez nous contacter directement par téléphone au <span className="font-medium">01 23 45 67 89</span> ou par email à <span className="font-medium">contact@shugamade.com</span>
+                        Si le problème persiste, vous pouvez nous contacter
+                        directement par téléphone au{" "}
+                        <span className="font-medium">01 23 45 67 89</span> ou
+                        par email à{" "}
+                        <span className="font-medium">
+                          contact@shugamade.com
+                        </span>
                       </div>
                       <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3">
-                        <Button 
+                        <Button
                           onClick={() => setBookingError(null)}
                           className="bg-[#bfe0fb] hover:bg-[#9deaff] text-white text-sm sm:text-base py-1.5 h-auto sm:h-10"
                         >
                           Réessayer
                         </Button>
-                        <Button 
+                        <Button
                           onClick={goBack}
                           variant="outline"
                           className="border-gray-300 dark:border-gray-700 text-sm sm:text-base py-1.5 h-auto sm:h-10"
@@ -401,13 +586,13 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
                   </div>
                 </div>
               ) : (
-                <CustomerInfoForm 
-                  customerInfo={customerInfo} 
-                  onChange={handleCustomerInfoChange} 
-                  onConfirm={confirmBooking} 
-                  onBack={goBack} 
-                  service={selectedService} 
-                  slot={selectedSlot} 
+                <CustomerInfoForm
+                  customerInfo={customerInfo}
+                  onChange={handleCustomerInfoChange}
+                  onConfirm={confirmBooking}
+                  onBack={goBack}
+                  service={selectedService}
+                  slot={selectedSlot}
                   isMultipleBooking={isMultipleBooking}
                   multipleBooking={multipleBooking}
                 />
@@ -417,11 +602,17 @@ export default function BookingClientWrapper({ services }: BookingClientWrapperP
         )}
 
         {bookingStep === 4 && selectedService && bookingConfirmed && (
-          <div className={`transition-all duration-300 ${fadeOut ? 'opacity-0 transform translate-y-4' : 'opacity-100 transform translate-y-0'}`}>
-            <BookingConfirmation 
-              service={selectedService} 
-              slot={selectedSlot} 
-              customerInfo={customerInfo} 
+          <div
+            className={`transition-all duration-300 ${
+              fadeOut
+                ? "opacity-0 transform translate-y-4"
+                : "opacity-100 transform translate-y-0"
+            }`}
+          >
+            <BookingConfirmation
+              service={selectedService}
+              slot={selectedSlot}
+              customerInfo={customerInfo}
               isMultipleBooking={isMultipleBooking}
               multipleBooking={multipleBooking}
             />

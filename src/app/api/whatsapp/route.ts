@@ -1,14 +1,70 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
+ * Fonction pour formater correctement les numéros de téléphone internationaux
+ * Gère les cas spécifiques par pays, notamment le 0 initial après l'indicatif pays
+ */
+function formatPhoneNumber(phoneNumber: string): string {
+  // Supprimer tous les espaces
+  let formattedNumber = phoneNumber.replace(/\s+/g, "");
+
+  // S'assurer que le numéro commence par un +
+  if (!formattedNumber.startsWith("+")) {
+    formattedNumber = `+${formattedNumber}`;
+  }
+
+  // Liste des pays qui utilisent un 0 comme indicateur national qui doit être supprimé
+  // dans un format international (la clé est l'indicatif du pays)
+  const countriesWithLeadingZero = [
+    "+33", // France
+    "+44", // Royaume-Uni
+    "+39", // Italie
+    "+34", // Espagne
+    "+49", // Allemagne
+    "+32", // Belgique
+    "+31", // Pays-Bas
+  ];
+
+  // Vérifier si le numéro correspond à l'un des pays listés
+  for (const countryCode of countriesWithLeadingZero) {
+    if (
+      formattedNumber.startsWith(countryCode) &&
+      formattedNumber.length > countryCode.length
+    ) {
+      // Si le caractère après l'indicatif pays est un 0, le supprimer
+      if (formattedNumber.charAt(countryCode.length) === "0") {
+        formattedNumber = `${countryCode}${formattedNumber.substring(
+          countryCode.length + 1
+        )}`;
+        break; // Sortir de la boucle une fois le traitement effectué
+      }
+    }
+  }
+
+  return formattedNumber;
+}
+
+/**
  * API pour envoyer des messages WhatsApp via EvolutionAPI
  */
 export async function POST(request: NextRequest) {
   try {
-    // Configuration de l'API Evolution
-    const serverUrl = "https://evolution-api.bienquoi.com";
-    const instanceName = "Mbotebio";
-    const apiKey = "429683C4C977415CAAFCCE10F7D57E11";
+    // Configuration de l'API Evolution depuis les variables d'environnement
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+
+    // Vérifier que les variables d'environnement sont définies
+    if (!serverUrl || !instanceName || !apiKey) {
+      console.error("Variables d'environnement WhatsApp manquantes");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Configuration serveur incomplète",
+        },
+        { status: 500 }
+      );
+    }
 
     // Récupérer les données de la requête
     const data = await request.json();
@@ -25,11 +81,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Formater le numéro de téléphone (suppression des espaces et ajout du + si nécessaire)
-    let phoneNumber = data.phoneNumber.replace(/\s+/g, "");
-    if (!phoneNumber.startsWith("+")) {
-      phoneNumber = `+${phoneNumber}`;
-    }
+    // Utiliser la nouvelle fonction de formatage de numéro de téléphone
+    const phoneNumber = formatPhoneNumber(data.phoneNumber);
 
     // Construction du payload pour EvolutionAPI
     const payload = {

@@ -27,7 +27,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 interface BookingConfirmationProps {
-  service: ServiceType;
+  services: ServiceType[];
   slot: AvailableSlot | null;
   customerInfo: CustomerInfo;
   isMultipleBooking: boolean;
@@ -35,7 +35,7 @@ interface BookingConfirmationProps {
 }
 
 export default function BookingConfirmation({
-  service,
+  services,
   slot,
   customerInfo,
   isMultipleBooking,
@@ -43,6 +43,39 @@ export default function BookingConfirmation({
 }: BookingConfirmationProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const bookingCardRef = useRef<HTMLDivElement>(null);
+
+  // Fonction pour calculer la durée totale des services
+  const calculateTotalDuration = (): number => {
+    return services.reduce((total, service) => {
+      // Utiliser durationMinutes si disponible, sinon extraire de la chaîne de caractères
+      if (service.durationMinutes) {
+        return total + service.durationMinutes;
+      }
+
+      // Extraire les minutes de la chaîne de caractères (ex: "30 min" -> 30)
+      const durationMatch = service.duration.match(/(\d+)/);
+      return total + (durationMatch ? parseInt(durationMatch[0], 10) : 0);
+    }, 0);
+  };
+
+  // Fonction pour calculer le prix total des services
+  const calculateTotalPrice = (): string => {
+    if (services.length === 0) return "";
+
+    // Calculer le prix total
+    const total = services.reduce((sum, service) => {
+      // Extraire le montant numérique du prix (ex: "10 000 FCFA" -> 10000)
+      const priceMatch = service.price.match(/(\d+\s*\d*)/);
+      if (!priceMatch) return sum;
+
+      // Convertir en nombre en supprimant les espaces
+      const priceValue = parseInt(priceMatch[0].replace(/\s+/g, ""), 10);
+      return sum + priceValue;
+    }, 0);
+
+    // Formater le prix avec des espaces pour les milliers et ajouter la devise
+    return `${total.toLocaleString("fr-FR")} FCFA`;
+  };
 
   // Fonction pour formater la date pour l'affichage
   const formatDateString = (dateStr: string) => {
@@ -107,26 +140,74 @@ export default function BookingConfirmation({
 
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(12);
-      pdf.text(service.name, 20, 42);
-      pdf.text(service.price, 20, 48);
+
+      if (services.length === 1) {
+        // Un seul service
+        pdf.text(services[0].name, 20, 42);
+        // Positionner le prix à droite
+        const prixTextWidth =
+          (pdf.getStringUnitWidth(services[0].price) * pdf.getFontSize()) /
+          pdf.internal.scaleFactor;
+        pdf.text(services[0].price, pdfWidth - 20 - prixTextWidth, 42);
+      } else {
+        // Multiple services
+        pdf.text("Services combinés", 20, 42);
+
+        let yPos = 48;
+        services.forEach((service, index) => {
+          // Nom du service à gauche
+          pdf.text(`${index + 1}. ${service.name}`, 25, yPos);
+
+          // Prix à droite
+          const prixTextWidth =
+            (pdf.getStringUnitWidth(service.price) * pdf.getFontSize()) /
+            pdf.internal.scaleFactor;
+          pdf.text(service.price, pdfWidth - 20 - prixTextWidth, yPos);
+
+          yPos += 6;
+        });
+
+        // Calculer et afficher le total à droite
+        const totalPrice = calculateTotalPrice();
+        pdf.setFont("helvetica", "bold");
+
+        const totalTextWidth =
+          (pdf.getStringUnitWidth(`Total: ${totalPrice}`) * pdf.getFontSize()) /
+          pdf.internal.scaleFactor;
+        pdf.text(
+          `Total: ${totalPrice}`,
+          pdfWidth - 20 - totalTextWidth,
+          yPos + 6
+        );
+        yPos += 12; // Pour la suite du PDF
+      }
 
       // Ajouter les informations de date et heure
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(14);
-      pdf.text("Date et heure", 20, 60);
+      // Décaler la position Y pour commencer la section Date après les services (simple ou multiples)
+      const dateYPos =
+        services.length === 1 ? 60 : 48 + services.length * 6 + 18;
+      pdf.text("Date et heure", 20, dateYPos);
 
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(12);
 
       if (!isMultipleBooking && slot) {
+        // Pour une réservation simple
         const date = new Date(slot.date);
         const formattedDate = format(date, "EEEE d MMMM yyyy", { locale: fr });
-        pdf.text(`${formattedDate}`, 20, 67);
-        pdf.text(`${slot.start} - ${slot.end}`, 20, 73);
+        pdf.text(formattedDate, 20, dateYPos + 7);
+        pdf.text(`${slot.start} - ${slot.end}`, 20, dateYPos + 14);
       } else if (isMultipleBooking && multipleBooking) {
-        pdf.text(`${multipleBooking.sessionCount} séances réservées`, 20, 67);
+        // Pour une réservation multiple
+        pdf.text(
+          `${multipleBooking.sessionCount} séances réservées`,
+          20,
+          dateYPos + 7
+        );
 
-        let yPos = 73;
+        let yPos = dateYPos + 14;
         multipleBooking.slots.forEach((slot, index) => {
           const date = new Date(slot.date);
           const formattedDate = format(date, "d MMMM yyyy", { locale: fr });
@@ -139,18 +220,18 @@ export default function BookingConfirmation({
         });
       }
 
-      // Ajouter les informations du client
+      // Ajouter les informations client
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(14);
       const clientYPos =
         isMultipleBooking && multipleBooking
-          ? 73 + multipleBooking.slots.length * 6 + 10
-          : 85;
-      pdf.text("Vos coordonnées", 20, clientYPos);
+          ? dateYPos + 14 + multipleBooking.slots.length * 6 + 10
+          : dateYPos + 28;
+      pdf.text("Informations client", 20, clientYPos);
 
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(12);
-      pdf.text(customerInfo.name, 20, clientYPos + 7);
+      pdf.text(`Nom: ${customerInfo.name}`, 20, clientYPos + 7);
       pdf.text(
         `Téléphone: ${customerInfo.phoneCountryCode}${customerInfo.phone}`,
         20,
@@ -160,7 +241,7 @@ export default function BookingConfirmation({
         pdf.text(`Email: ${customerInfo.email}`, 20, clientYPos + 21);
       }
 
-      // Ajouter l'adresse du salon
+      // Ajouter les informations du salon
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(14);
       const addressYPos = clientYPos + (customerInfo.email ? 35 : 28);
@@ -195,7 +276,7 @@ export default function BookingConfirmation({
       pdf.text(splitImportant, 20, addressYPos + 47);
 
       // Si c'est une promotion, ajouter les informations sur le kit
-      if (service.isPromo) {
+      if (services[0]?.isPromo) {
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(14);
         pdf.text("Kit SHUGAMADE offert", 20, addressYPos + 60);
@@ -245,7 +326,7 @@ export default function BookingConfirmation({
   // Fonction pour partager les détails de la réservation
   const handleShare = async () => {
     // Créer le texte du message de partage
-    let shareText = `J'ai réservé une séance de ${service.name} chez SHUGAMADE!\n\n`;
+    let shareText = `J'ai réservé une séance de ${services[0].name} chez SHUGAMADE!\n\n`;
 
     if (!isMultipleBooking && slot) {
       const date = new Date(slot.date);
@@ -264,7 +345,7 @@ export default function BookingConfirmation({
       // Vérifier si l'API Web Share est disponible
       if (navigator.share) {
         await navigator.share({
-          title: `Réservation SHUGAMADE - ${service.name}`,
+          title: `Réservation SHUGAMADE - ${services[0].name}`,
           text: shareText,
           url: window.location.href,
         });
@@ -345,20 +426,67 @@ export default function BookingConfirmation({
               {/* Informations sur le service */}
               <div className="space-y-4">
                 <div className="flex items-start">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#e2b3f7]/20 mr-3 flex-shrink-0">
-                    <Check className="w-4 h-4 text-[#e2b3f7]" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ffb2dd]/20 mr-3 flex-shrink-0">
+                    <Check className="w-4 h-4 text-[#ffb2dd]" />
                   </div>
-                  <div>
-                    <h5 className="font-medium text-gray-800 dark:text-white">
-                      Service réservé
-                    </h5>
-                    <p className="text-gray-700 dark:text-gray-300 mt-1">
-                      {service.name}
-                    </p>
-                    <p className="text-sm font-medium text-[#ffb2dd] mt-1">
-                      {service.price}
-                    </p>
-                  </div>
+                  {services.length === 1 ? (
+                    // Affichage pour un seul service
+                    <div>
+                      <h5 className="font-medium text-gray-800 dark:text-white">
+                        Service réservé
+                      </h5>
+                      <p className="text-gray-700 dark:text-gray-300 mt-1">
+                        {services[0].name}
+                      </p>
+                      <p className="text-sm font-medium text-[#ffb2dd] mt-1">
+                        {services[0].price}
+                      </p>
+                    </div>
+                  ) : (
+                    // Affichage pour plusieurs services combinés
+                    <div className="flex-1">
+                      <h5 className="font-medium text-gray-800 dark:text-white">
+                        Services combinés
+                      </h5>
+                      <div className="mt-2 space-y-2">
+                        {services.map((service) => (
+                          <div
+                            key={service.id}
+                            className="flex items-center justify-between py-1 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {service.name}
+                              </p>
+                              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                <Clock
+                                  size={12}
+                                  className="mr-1 flex-shrink-0"
+                                />
+                                <span>{service.duration}</span>
+                              </div>
+                            </div>
+                            <span className="text-sm font-medium text-[#ffb2dd]">
+                              {service.price}
+                            </span>
+                          </div>
+                        ))}
+
+                        {/* Affichage du total */}
+                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center">
+                            <Clock size={14} className="mr-1 flex-shrink-0" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Durée totale: {calculateTotalDuration()} minutes
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-[#ffb2dd]">
+                            {calculateTotalPrice()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {!isMultipleBooking && slot && (
@@ -484,7 +612,7 @@ export default function BookingConfirmation({
             </div>
 
             {/* Kit offert */}
-            {service.isPromo && (
+            {services[0].isPromo && (
               <div className="p-4 bg-gradient-to-r from-[#e2b3f7]/10 to-[#ffb2dd]/10 rounded-lg border border-[#e2b3f7]/20">
                 <h5 className="font-medium text-gray-800 dark:text-white flex items-center">
                   <Check className="w-4 h-4 mr-2 text-[#e2b3f7]" />
@@ -539,6 +667,23 @@ export default function BookingConfirmation({
           Un email de confirmation a été envoyé à{" "}
           {customerInfo.email || "votre adresse email"}.
         </p>
+      </div>
+
+      <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mt-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Pour confirmer définitivement votre réservation, veuillez verser un
+            acompte de{" "}
+            <span className="font-medium text-[#ffb2dd]">5 000 FCFA</span> via
+            MoMo au <span className="font-medium">06 597 56 23</span> ou via
+            Airtel au <span className="font-medium">05 092 89 99</span>.
+          </p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">
+            Mentionnez le numéro{" "}
+            <span className="text-[#ffb2dd]">{bookingNumber}</span> lors de
+            votre paiement.
+          </p>
+        </div>
       </div>
     </div>
   );

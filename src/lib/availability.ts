@@ -317,12 +317,22 @@ function formatAvailableSlots(
  */
 async function fetchBookings(): Promise<Booking[]> {
   try {
-    const response = await fetch(
-      "https://n8n.bienquoi.com/webhook/calendar/events",
-      {
-        next: { revalidate: 60 }, // Revalider les données toutes les 1 minute au lieu de 10 minutes
-      }
-    );
+    // URL du webhook calendar events depuis les variables d'environnement
+    const calendarEventsUrl = process.env.N8N_WEBHOOK_CALENDAR_EVENTS;
+
+    // Vérifier que la variable d'environnement est définie
+    if (!calendarEventsUrl) {
+      console.error(
+        "Variable d'environnement N8N_WEBHOOK_CALENDAR_EVENTS manquante"
+      );
+      throw new Error(
+        "Configuration incomplete - webhook calendar events URL manquante"
+      );
+    }
+
+    const response = await fetch(calendarEventsUrl, {
+      next: { revalidate: 60 }, // Revalider les données toutes les 1 minute au lieu de 10 minutes
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch bookings");

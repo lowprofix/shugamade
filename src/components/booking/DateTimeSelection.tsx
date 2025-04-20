@@ -35,7 +35,8 @@ import "./date-time-selection.css";
 // Hook supprimé et remplacé par des classes Tailwind pour le responsive design
 
 interface DateTimeSelectionProps {
-  service: ServiceType;
+  services: ServiceType[];
+  combinedDuration?: number;
   onSelectSlot: (slot: AvailableSlot) => void;
   onBack: () => void;
   isMultipleBooking?: boolean;
@@ -46,7 +47,8 @@ interface DateTimeSelectionProps {
 }
 
 export default function DateTimeSelection({
-  service,
+  services,
+  combinedDuration,
   onSelectSlot,
   onBack,
   isMultipleBooking = false,
@@ -78,6 +80,25 @@ export default function DateTimeSelection({
   const [invalidDates, setInvalidDates] = useState<Date[]>([]);
   // État pour afficher un message de guidage
   const [guidanceMessage, setGuidanceMessage] = useState<string | null>(null);
+
+  // Fonction pour calculer le prix total des services
+  const calculateTotalPrice = (services: ServiceType[]): string => {
+    if (services.length === 0) return "";
+
+    // Calculer le prix total
+    const total = services.reduce((sum, service) => {
+      // Extraire le montant numérique du prix (ex: "10 000 FCFA" -> 10000)
+      const priceMatch = service.price.match(/(\d+\s*\d*)/);
+      if (!priceMatch) return sum;
+
+      // Convertir en nombre en supprimant les espaces
+      const priceValue = parseInt(priceMatch[0].replace(/\s+/g, ""), 10);
+      return sum + priceValue;
+    }, 0);
+
+    // Formater le prix avec des espaces pour les milliers et ajouter la devise
+    return `${total.toLocaleString("fr-FR")} FCFA`;
+  };
 
   // Fonction pour formater la date pour l'affichage
   const formatDateString = (dateStr: string) => {
@@ -280,7 +301,7 @@ export default function DateTimeSelection({
     ).getDate();
 
     fetchAvailableSlots(
-      service.durationMinutes || 30,
+      combinedDuration || 30,
       formatToYYYYMMDD(startDate),
       daysInMonth
     );
@@ -369,11 +390,11 @@ export default function DateTimeSelection({
     );
 
     // Déterminer le nombre de séances en fonction du nom du service
-    const sessionsNeeded = service.name.includes("4 séances") ? 4 : 6;
+    const sessionsNeeded = services[0].name.includes("4 séances") ? 4 : 6;
     setSessionCount(sessionsNeeded);
 
     // Déterminer le type de service en fonction du nom
-    const serviceTypeStr = service.name.includes("Tempes")
+    const serviceTypeStr = services[0].name.includes("Tempes")
       ? "Tempes"
       : "Tête entière";
     setServiceType(serviceTypeStr);
@@ -456,7 +477,7 @@ export default function DateTimeSelection({
   // Charger les créneaux disponibles au chargement du composant et sélectionner automatiquement la date du jour
   useEffect(() => {
     const loadInitialSlots = async () => {
-      await fetchAvailableSlots(service.durationMinutes || 30);
+      await fetchAvailableSlots(combinedDuration || 30);
 
       // Sélectionner automatiquement la date du jour si des créneaux sont disponibles
       const today = new Date();
@@ -477,7 +498,7 @@ export default function DateTimeSelection({
     };
 
     loadInitialSlots();
-  }, [service]);
+  }, [services, combinedDuration]);
 
   // Mettre à jour invalidDates quand les créneaux sélectionnés changent
   useEffect(() => {
@@ -507,7 +528,7 @@ export default function DateTimeSelection({
       const monthsToLoad: Date[] = [];
 
       // Calculer le nombre de mois à précharger en fonction du nombre de séances
-      const sessionsNeeded = service.name.includes("4 séances") ? 4 : 6;
+      const sessionsNeeded = services[0].name.includes("4 séances") ? 4 : 6;
 
       // Ajout des mois prévus pour les séances futures (en estimant une séance toutes les 2 semaines)
       for (let i = 0; i < Math.ceil(sessionsNeeded / 2); i++) {
@@ -539,7 +560,7 @@ export default function DateTimeSelection({
         });
       }
     }
-  }, [isMultipleBooking, initialLoadComplete, service.name]);
+  }, [isMultipleBooking, initialLoadComplete, services[0].name]);
 
   // Filtrer les créneaux pour la date sélectionnée
   const slotsForSelectedDate = selectedDate
@@ -565,36 +586,79 @@ export default function DateTimeSelection({
         </Button>
       </div>
 
-      {/* Informations sur le service sélectionné */}
-      <div className="p-4 bg-gradient-to-r from-[#ffb2dd]/10 to-[#e2b3f7]/10 rounded-lg border border-[#ffb2dd]/30">
-        <div className="flex items-start">
-          <Info size={18} className="text-[#ffb2dd] mt-1 mr-3 flex-shrink-0" />
-          <div>
-            <h4 className="font-medium text-gray-800 dark:text-white">
-              {service.name}
-            </h4>
-            <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-300">
-              <Clock size={14} className="mr-1 flex-shrink-0" />
-              <span>
-                {service.duration} ({service.durationMinutes} minutes)
-              </span>
-              <span className="mx-2">•</span>
-              <span className="font-medium text-[#ffb2dd]">
-                {service.price}
-              </span>
+      {/* Informations sur les services sélectionnés */}
+      <Card className="mb-6 overflow-hidden border-none shadow-md bg-gradient-to-r from-white to-[#bfe0fb]/5 dark:from-gray-900 dark:to-[#bfe0fb]/10">
+        <CardContent className="p-4">
+          {services.length === 1 ? (
+            // Affichage d'un seul service
+            <div>
+              <h4 className="font-medium text-gray-800 dark:text-white">
+                {services[0].name}
+              </h4>
+              <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-300">
+                <Clock size={14} className="mr-1 flex-shrink-0" />
+                <span>
+                  {services[0].duration} ({services[0].durationMinutes} minutes)
+                </span>
+                <span className="mx-2">•</span>
+                <span className="font-medium text-[#ffb2dd]">
+                  {services[0].price}
+                </span>
+              </div>
+              {isMultipleBooking && (
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  Veuillez sélectionner{" "}
+                  {services[0].name.includes("4 séances") ? "4" : "6"} créneaux
+                  pour ce forfait, espacés d'au moins 2 semaines chacun.
+                </p>
+              )}
             </div>
-            {isMultipleBooking && (
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                Veuillez sélectionner{" "}
-                {service.name.includes("4 séances") ? "4" : "6"} créneaux pour
-                ce forfait, espacés d'au moins 2 semaines chacun.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+          ) : (
+            // Affichage de plusieurs services
+            <div>
+              <h4 className="font-medium text-gray-800 dark:text-white">
+                Services combinés
+              </h4>
+              <div className="mt-2 space-y-2">
+                {services.map((service, index) => (
+                  <div
+                    key={service.id}
+                    className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                  >
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {service.name}
+                      </p>
+                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                        <Clock size={12} className="mr-1 flex-shrink-0" />
+                        <span>{service.duration}</span>
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-[#ffb2dd]">
+                      {service.price}
+                    </span>
+                  </div>
+                ))}
 
-      {/* Message de guidage pour la sélection multiple */}
+                {/* Affichage du total */}
+                <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center">
+                    <Clock size={14} className="mr-1 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Durée totale: {combinedDuration} minutes
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-[#ffb2dd]">
+                    {calculateTotalPrice(services)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Message de guidage pour les réservations multiples */}
       {guidanceMessage && (
         <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm flex items-start">
           <AlertCircle
@@ -686,7 +750,7 @@ export default function DateTimeSelection({
                     </div>
                     <Button
                       onClick={() =>
-                        fetchAvailableSlots(service.durationMinutes || 30)
+                        fetchAvailableSlots(combinedDuration || 30)
                       }
                       className="bg-[#bfe0fb] hover:bg-[#9deaff] text-white text-sm sm:text-base py-1.5 h-auto sm:h-10"
                     >
@@ -851,7 +915,10 @@ export default function DateTimeSelection({
                           </p>
                           <p className="text-xs mt-1">
                             Chaque créneau a une durée de{" "}
-                            {service.durationMinutes} minutes
+                            {services.length > 1
+                              ? combinedDuration
+                              : services[0].durationMinutes}{" "}
+                            minutes
                           </p>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

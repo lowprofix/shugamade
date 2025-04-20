@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Données manquantes. Les champs name, email et message sont requis.",
+          error:
+            "Données manquantes. Les champs name, email et message sont requis.",
         },
         { status: 400 }
       );
@@ -26,13 +27,25 @@ export async function POST(request: NextRequest) {
       email: formData.email,
       message: formData.message,
       date: new Date().toISOString(),
-      source: "Site web ShugaMade - Formulaire de contact"
+      source: "Site web ShugaMade - Formulaire de contact",
     };
 
     console.log("Envoi du message de contact à n8n:", contactData);
 
-    // URL du webhook n8n (à remplacer par votre URL réelle)
-    const webhookUrl = "https://n8n.bienquoi.com/webhook/contact-form";
+    // URL du webhook n8n depuis les variables d'environnement
+    const webhookUrl = process.env.N8N_WEBHOOK_CONTACT;
+
+    // Vérifier que la variable d'environnement est définie
+    if (!webhookUrl) {
+      console.error("Variable d'environnement N8N_WEBHOOK_CONTACT manquante");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Configuration serveur incomplète",
+        },
+        { status: 500 }
+      );
+    }
 
     // Appeler le webhook n8n
     const response = await fetch(webhookUrl, {
@@ -54,7 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Message envoyé avec succès",
-      data: responseData
+      data: responseData,
     });
   } catch (error) {
     console.error("Erreur lors de l'envoi du message:", error);

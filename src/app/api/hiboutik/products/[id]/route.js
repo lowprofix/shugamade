@@ -2,9 +2,9 @@
 // Utilise les Server Components de Next.js pour éviter les problèmes CORS
 
 // Configuration des identifiants Hiboutik
-const apiLogin = "shugamadec@gmail.com";
-const apiKey = "SOF5HH5RCP7T5DVR5NHDT5T14M8F6N8ASN2";
-const baseUrl = "https://shugamade.hiboutik.com/api";
+const apiLogin = process.env.HIBOUTIK_API_LOGIN;
+const apiKey = process.env.HIBOUTIK_API_KEY;
+const baseUrl = process.env.HIBOUTIK_BASE_URL;
 
 // Fonction utilitaire pour créer les headers d'authentification
 function getAuthHeaders() {

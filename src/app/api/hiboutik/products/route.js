@@ -1,13 +1,19 @@
 // API Route pour gérer les produits et stocks Hiboutik
 // Utilise les Server Components de Next.js pour éviter les problèmes CORS
 
-// Configuration des identifiants Hiboutik
-const apiLogin = "shugamadec@gmail.com";
-const apiKey = "SOF5HH5RCP7T5DVR5NHDT5T14M8F6N8ASN2";
-const baseUrl = "https://shugamade.hiboutik.com/api";
+// Configuration des identifiants Hiboutik depuis les variables d'environnement
+const apiLogin = process.env.HIBOUTIK_API_LOGIN;
+const apiKey = process.env.HIBOUTIK_API_KEY;
+const baseUrl = process.env.HIBOUTIK_BASE_URL;
 
 // Fonction utilitaire pour créer les headers d'authentification
 function getAuthHeaders() {
+  // Vérifier que les variables d'environnement sont définies
+  if (!apiLogin || !apiKey || !baseUrl) {
+    console.error("Variables d'environnement Hiboutik manquantes");
+    throw new Error("Configuration Hiboutik incomplète");
+  }
+
   // Encodage des identifiants en Base64 pour l'authentification HTTP Basic
   const credentials = Buffer.from(`${apiLogin}:${apiKey}`).toString("base64");
 
@@ -24,6 +30,17 @@ function getAuthHeaders() {
 // GET - Récupérer la liste des produits avec leurs stocks
 export async function GET() {
   try {
+    // Vérifier que les variables d'environnement sont définies
+    if (!apiLogin || !apiKey || !baseUrl) {
+      return Response.json(
+        {
+          error: "Configuration Hiboutik incomplète",
+          message: "Variables d'environnement manquantes",
+        },
+        { status: 500 }
+      );
+    }
+
     // 1. D'abord récupérer tous les produits
     const productsUrl = `${baseUrl}/products/`;
     const productsResponse = await fetch(productsUrl, {

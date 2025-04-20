@@ -27,14 +27,14 @@ export function ProductCard({
         "group relative overflow-hidden border-none shadow-lg h-full",
         "transition-all duration-500 ease-out",
         "hover:shadow-xl hover:shadow-[#e2b3f7]/10 hover:-translate-y-1",
-        isSelected ? "ring-2 ring-[#bfe0fb]" : "",
+        isSelected ? "ring-2 ring-[#0072BB]" : "",
         className
       )}
       onClick={onSelect}
     >
       {/* Badge "Sélectionné" */}
       {isSelected && (
-        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-[#bfe0fb] to-[#9deaff] text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-[#0072BB] to-[#0086D8] text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
           <Check className="w-3.5 h-3.5" />
           <span>Sélectionné</span>
         </div>
@@ -101,10 +101,10 @@ export function ProductCard({
             className={cn(
               "transition-all duration-300 ease-in-out transform hover:scale-[1.02]",
               isSelected
-                ? "bg-gradient-to-r from-[#bfe0fb] to-[#9deaff] text-white hover:shadow-[#9deaff]/20 hover:shadow-md"
+                ? "bg-gradient-to-r from-[#0072BB] to-[#0086D8] text-white hover:shadow-[#0086D8]/20 hover:shadow-md"
                 : product.stock === 0
                 ? "border-red-300 text-red-400"
-                : "border-[#bfe0fb] text-[#bfe0fb] hover:bg-[#bfe0fb]/10"
+                : "border-[#0072BB] text-[#0072BB] hover:bg-[#0072BB]/10"
             )}
           >
             {isSelected ? (

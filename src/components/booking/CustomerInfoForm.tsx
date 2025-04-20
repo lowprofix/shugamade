@@ -30,7 +30,7 @@ interface CustomerInfoFormProps {
   ) => void;
   onConfirm: () => void;
   onBack: () => void;
-  service: ServiceType;
+  services: ServiceType[];
   slot: AvailableSlot | null;
   isMultipleBooking: boolean;
   multipleBooking: MultipleBooking | null;
@@ -38,17 +38,13 @@ interface CustomerInfoFormProps {
 
 // Liste des indicatifs téléphoniques courants
 const countryPhoneCodes = [
-  { code: "+242", country: "Congo Brazzaville" },
-  { code: "+243", country: "RD Congo" },
+  { code: "+242", country: "Congo" },
+  { code: "+243", country: "RDC" },
   { code: "+241", country: "Gabon" },
   { code: "+235", country: "Tchad" },
-  { code: "+236", country: "République centrafricaine" },
-  { code: "+237", country: "Cameroun" },
   { code: "+33", country: "France" },
-  { code: "+1", country: "États-Unis/Canada" },
-  { code: "+44", country: "Royaume-Uni" },
+  { code: "+1", country: "USA/CA" },
   { code: "+32", country: "Belgique" },
-  { code: "+41", country: "Suisse" },
 ];
 
 export default function CustomerInfoForm({
@@ -56,13 +52,46 @@ export default function CustomerInfoForm({
   onChange,
   onConfirm,
   onBack,
-  service,
+  services,
   slot,
   isMultipleBooking,
   multipleBooking,
 }: CustomerInfoFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fonction pour calculer la durée totale des services
+  const calculateTotalDuration = (): number => {
+    return services.reduce((total, service) => {
+      // Utiliser durationMinutes si disponible, sinon extraire de la chaîne de caractères
+      if (service.durationMinutes) {
+        return total + service.durationMinutes;
+      }
+
+      // Extraire les minutes de la chaîne de caractères (ex: "30 min" -> 30)
+      const durationMatch = service.duration.match(/(\d+)/);
+      return total + (durationMatch ? parseInt(durationMatch[0], 10) : 0);
+    }, 0);
+  };
+
+  // Fonction pour calculer le prix total des services
+  const calculateTotalPrice = (): string => {
+    if (services.length === 0) return "";
+
+    // Calculer le prix total
+    const total = services.reduce((sum, service) => {
+      // Extraire le montant numérique du prix (ex: "10 000 FCFA" -> 10000)
+      const priceMatch = service.price.match(/(\d+\s*\d*)/);
+      if (!priceMatch) return sum;
+
+      // Convertir en nombre en supprimant les espaces
+      const priceValue = parseInt(priceMatch[0].replace(/\s+/g, ""), 10);
+      return sum + priceValue;
+    }, 0);
+
+    // Formater le prix avec des espaces pour les milliers et ajouter la devise
+    return `${total.toLocaleString("fr-FR")} FCFA`;
+  };
 
   // Fonction pour formater la date pour l'affichage
   const formatDateString = (dateStr: string) => {
@@ -167,22 +196,22 @@ export default function CustomerInfoForm({
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Téléphone <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex">
-                    <div className="relative">
+                  <div className="flex flex-wrap md:flex-nowrap">
+                    <div className="relative w-full md:w-auto mb-2 md:mb-0">
                       <select
                         name="phoneCountryCode"
                         value={customerInfo.phoneCountryCode}
                         onChange={onChange}
-                        className="pl-3 pr-8 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-l-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e2b3f7]/50 focus:border-transparent"
+                        className="pl-2 pr-6 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg md:rounded-r-none md:rounded-l-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e2b3f7]/50 focus:border-transparent w-full"
                       >
                         {countryPhoneCodes.map((country) => (
                           <option key={country.code} value={country.code}>
-                            {country.code} {country.country}
+                            {country.code} ({country.country})
                           </option>
                         ))}
                       </select>
                     </div>
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 w-full">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <Phone className="w-4 h-4 text-gray-400" />
                       </div>
@@ -192,15 +221,18 @@ export default function CustomerInfoForm({
                         value={customerInfo.phone}
                         onChange={onChange}
                         className={cn(
-                          "pl-10 pr-4 py-2 w-full bg-gray-50 dark:bg-gray-800 border border-l-0 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e2b3f7]/50 focus:border-transparent",
+                          "pl-10 pr-4 py-2 w-full bg-gray-50 dark:bg-gray-800 border rounded-lg md:rounded-l-none md:rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e2b3f7]/50 focus:border-transparent",
                           errors.phone
                             ? "border-red-300 dark:border-red-700"
                             : "border-gray-200 dark:border-gray-700"
                         )}
-                        placeholder="Votre numéro (sans indicatif)"
+                        placeholder="Numéro (ex: 06 xxx xx xx)"
                       />
                     </div>
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Entrez votre numéro sans l'indicatif pays
+                  </p>
                   {errors.phone && (
                     <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
                   )}
@@ -290,122 +322,156 @@ export default function CustomerInfoForm({
         <div>
           <Card className="overflow-hidden border-none shadow-md">
             <CardContent className="p-6">
-              <h4 className="text-lg font-medium text-gray-800 dark:text-white mb-4">
-                Récapitulatif de votre réservation
-              </h4>
+              <div className="mb-6">
+                <h4 className="text-base font-medium text-gray-800 dark:text-white mb-3">
+                  Récapitulatif de la réservation
+                </h4>
 
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#e2b3f7]/20 mr-3 flex-shrink-0">
-                    <Check className="w-4 h-4 text-[#e2b3f7]" />
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-gray-800 dark:text-white">
-                      {service.name}
-                    </h5>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      {service.description}
-                    </p>
-                    <p className="text-sm font-medium text-[#ffb2dd] mt-1">
-                      {service.price}
-                    </p>
-                  </div>
-                </div>
-
-                {!isMultipleBooking && slot && (
-                  <div className="flex items-start">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#bfe0fb]/20 mr-3 flex-shrink-0">
-                      <Calendar className="w-4 h-4 text-[#bfe0fb]" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-gray-800 dark:text-white">
-                        Date et heure
-                      </h5>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 capitalize">
-                        {formatDateString(slot.date)}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300 mt-1">
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span>
-                          {slot.start} - {slot.end}
-                        </span>
+                {isMultipleBooking ? (
+                  // Affichage pour les réservations multiples (forfaits)
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ffb2dd]/20 mr-3 flex-shrink-0">
+                        <Calendar className="w-4 h-4 text-[#ffb2dd]" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-gray-800 dark:text-white">
+                          {services[0].name}
+                        </h5>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                          {services[0].description}
+                        </p>
+                        <p className="text-sm font-medium text-[#ffb2dd] mt-1">
+                          {services[0].price}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                )}
 
-                {isMultipleBooking && multipleBooking && (
-                  <div className="flex items-start">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#bfe0fb]/20 mr-3 flex-shrink-0">
-                      <Calendar className="w-4 h-4 text-[#bfe0fb]" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-gray-800 dark:text-white">
-                        Vos {multipleBooking.sessionCount} séances
-                      </h5>
-                      <div className="mt-2 space-y-2">
-                        {multipleBooking.slots.map((slot, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center bg-[#bfe0fb]/10 p-2 rounded-lg"
-                          >
-                            <div className="w-5 h-5 rounded-full bg-[#bfe0fb] text-white text-xs flex items-center justify-center mr-2">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-700 dark:text-gray-300 capitalize">
-                                {formatDateString(slot.date)}
-                              </p>
-                              <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                                <Clock className="w-3 h-3 mr-1" />
-                                <span>
-                                  {slot.start} - {slot.end}
-                                </span>
+                    {/* Liste des créneaux réservés pour les forfaits */}
+                    {multipleBooking && multipleBooking.slots.length > 0 && (
+                      <div className="mt-4 pl-11">
+                        <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          {multipleBooking.slots.length} séances réservées:
+                        </h6>
+                        <div className="space-y-2 mt-3">
+                          {multipleBooking.slots.map((slot, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center bg-[#bfe0fb]/10 p-2 rounded-lg"
+                            >
+                              <div className="w-5 h-5 rounded-full bg-[#bfe0fb] text-white text-xs flex items-center justify-center mr-2">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-700 dark:text-gray-300 capitalize">
+                                  {formatDateString(slot.date)}
+                                </p>
+                                <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  <span>
+                                    {slot.start} - {slot.end}
+                                  </span>
+                                </div>
                               </div>
                             </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : services.length === 1 ? (
+                  // Affichage pour un seul service (réservation simple)
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ffb2dd]/20 mr-3 flex-shrink-0">
+                        <Calendar className="w-4 h-4 text-[#ffb2dd]" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-gray-800 dark:text-white">
+                          {services[0].name}
+                        </h5>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                          {services[0].description}
+                        </p>
+                        <p className="text-sm font-medium text-[#ffb2dd] mt-1">
+                          {services[0].price}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Date et heure pour réservation simple */}
+                    {!isMultipleBooking && slot && (
+                      <div className="flex items-start">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#bfe0fb]/20 mr-3 flex-shrink-0">
+                          <Clock className="w-4 h-4 text-[#bfe0fb]" />
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-gray-800 dark:text-white">
+                            Date et heure
+                          </h5>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 capitalize">
+                            {formatDateString(slot.date)}
+                          </p>
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            <Clock className="w-3 h-3 mr-1" />
+                            <span>
+                              {slot.start} - {slot.end}
+                            </span>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
-
-                {service.includes && service.includes.length > 0 && (
-                  <div className="flex items-start">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#9deaff]/20 mr-3 flex-shrink-0">
-                      <Check className="w-4 h-4 text-[#9deaff]" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-gray-800 dark:text-white">
-                        Ce service inclut
-                      </h5>
-                      <ul className="mt-2 space-y-1">
-                        {service.includes.map((item, index) => (
-                          <li
-                            key={index}
-                            className="flex items-start text-sm text-gray-600 dark:text-gray-300"
-                          >
-                            <Check className="w-3 h-3 mt-1 mr-1 text-[#9deaff]" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {service.isPromo && (
-                  <div className="p-3 bg-[#ffb2dd]/10 rounded-lg mt-4">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-[#ffb2dd]/20 flex items-center justify-center mr-2">
-                        <Check className="w-4 h-4 text-[#ffb2dd]" />
+                ) : (
+                  // Affichage pour plusieurs services (sélection multiple)
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ffb2dd]/20 mr-3 flex-shrink-0">
+                        <Calendar className="w-4 h-4 text-[#ffb2dd]" />
                       </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        <span className="font-medium">
-                          Kit SHUGAMADE offert
-                        </span>{" "}
-                        avec ce forfait
-                      </p>
+                      <div className="flex-1">
+                        <h5 className="font-medium text-gray-800 dark:text-white">
+                          Services combinés
+                        </h5>
+
+                        <div className="mt-2 space-y-2">
+                          {services.map((service) => (
+                            <div
+                              key={service.id}
+                              className="flex items-center justify-between py-1 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                            >
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {service.name}
+                                </p>
+                                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                  <Clock
+                                    size={12}
+                                    className="mr-1 flex-shrink-0"
+                                  />
+                                  <span>{service.duration}</span>
+                                </div>
+                              </div>
+                              <span className="text-sm font-medium text-[#ffb2dd]">
+                                {service.price}
+                              </span>
+                            </div>
+                          ))}
+
+                          {/* Affichage du total */}
+                          <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center">
+                              <Clock size={14} className="mr-1 flex-shrink-0" />
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Durée totale: {calculateTotalDuration()} minutes
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-[#ffb2dd]">
+                              {calculateTotalPrice()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

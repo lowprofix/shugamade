@@ -7,7 +7,6 @@ export interface Service {
   name: string;
   price: string;
   duration: string;
-  calLink: string;
   description?: string;
   isPromo?: boolean;
   color?: "teal" | "pink" | "brand";
@@ -54,7 +53,6 @@ export const services: Service[] = [
     name: "Diagnostic simple",
     price: "10 000 FCFA",
     duration: "30 min",
-    calLink: "mbote-bio-oabi4t/diagnostic-capillaire",
     description:
       "Évaluation complète de votre cuir chevelu et diagnostic personnalisé pour déterminer le traitement adapté.",
     color: "brand",
@@ -70,7 +68,6 @@ export const services: Service[] = [
     name: "Diagnostic complet avec compte-rendu",
     price: "15 000 FCFA",
     duration: "45 min",
-    calLink: "mbote-bio-oabi4t/diagnostic-complet",
     description:
       "Évaluation approfondie de votre cuir chevelu avec analyse détaillée et rapport écrit personnalisé.",
     color: "brand",
@@ -87,7 +84,6 @@ export const services: Service[] = [
     name: "Massage crânien",
     price: "5 000 FCFA",
     duration: "10 min",
-    calLink: "mbote-bio-oabi4t/massage-cranien",
     description:
       "Massage relaxant du cuir chevelu pour stimuler la circulation sanguine et favoriser la santé capillaire.",
     color: "brand",
@@ -103,7 +99,6 @@ export const services: Service[] = [
     name: "Électrothérapie",
     price: "10 000 FCFA",
     duration: "10 min",
-    calLink: "mbote-bio-oabi4t/machine-electrotherapie",
     description:
       "Traitement par électrothérapie pour stimuler la circulation sanguine et favoriser la santé du cuir chevelu.",
     color: "pink",
@@ -119,7 +114,6 @@ export const services: Service[] = [
     name: "Luminothérapie",
     price: "10 000 FCFA",
     duration: "20 min",
-    calLink: "mbote-bio-oabi4t/machine-luminotherapie",
     description:
       "Traitement par luminothérapie pour activer les cellules du cuir chevelu et favoriser la repousse.",
     color: "teal",
@@ -135,7 +129,6 @@ export const services: Service[] = [
     name: "Hairneedling - Tempes",
     price: "35 000 FCFA",
     duration: "45 min",
-    calLink: "mbote-bio-oabi4t/hairneedling-tempes",
     description:
       "Traitement spécifique pour les zones temporales avec notre technique de micro-needling et sérums naturels.",
     color: "pink",
@@ -151,7 +144,6 @@ export const services: Service[] = [
     name: "Hairneedling - Tête entière",
     price: "45 000 FCFA",
     duration: "60 min",
-    calLink: "mbote-bio-oabi4t/hairneedling-tete-entiere",
     description:
       "Traitement complet du cuir chevelu pour stimuler la repousse et renforcer les follicules pileux.",
     color: "teal",
@@ -174,9 +166,13 @@ export const promoServices: Service[] = [
     name: "Promo 4 séances - Tempes",
     price: "135 000 FCFA",
     duration: "4 x 45 min",
-    calLink: "mbote-bio-oabi4t/pack-promo-hairneedling-tempes-4-seances",
     isPromo: true,
     color: "pink",
+    includes: [
+      "4 séances de Hairneedling - Tempes",
+      "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
+      "Diagnostic capillaire offert (valeur 10 000 FCFA)",
+    ],
     durationMinutes: 45,
   },
   {
@@ -184,9 +180,13 @@ export const promoServices: Service[] = [
     name: "Promo 4 séances - Tête entière",
     price: "175 000 FCFA",
     duration: "4 x 60 min",
-    calLink: "mbote-bio-oabi4t/pack-promo-hairneedling-tete-entiere-4-seances",
     isPromo: true,
     color: "teal",
+    includes: [
+      "4 séances de Hairneedling - Tête entière",
+      "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
+      "Diagnostic capillaire offert (valeur 10 000 FCFA)",
+    ],
     durationMinutes: 60,
   },
   {
@@ -194,9 +194,13 @@ export const promoServices: Service[] = [
     name: "Promo 6 séances - Tempes",
     price: "190 000 FCFA",
     duration: "6 x 45 min",
-    calLink: "mbote-bio-oabi4t/pack-promo-hairneedling-tempes-6-seances",
     isPromo: true,
     color: "pink",
+    includes: [
+      "6 séances de Hairneedling - Tempes",
+      "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
+      "Diagnostic capillaire offert (valeur 10 000 FCFA)",
+    ],
     durationMinutes: 45,
   },
   {
@@ -204,9 +208,13 @@ export const promoServices: Service[] = [
     name: "Promo 6 séances - Tête entière",
     price: "250 000 FCFA",
     duration: "6 x 60 min",
-    calLink: "mbote-bio-oabi4t/pack-promo-hairneedling-tete-entiere-6-seances",
     isPromo: true,
     color: "teal",
+    includes: [
+      "6 séances de Hairneedling - Tête entière",
+      "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
+      "Diagnostic capillaire offert (valeur 10 000 FCFA)",
+    ],
     durationMinutes: 60,
   },
 ];

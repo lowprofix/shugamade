@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkSlotAvailability } from "@/lib/availability";
-import { format } from "date-fns-tz";
+import { toZonedTime, format } from "date-fns-tz";
+import { fr } from "date-fns/locale";
+
+// Définir la constante TIMEZONE
+const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
 
 /**
  * Type pour la requête de réservation multiple
@@ -312,21 +316,15 @@ export async function POST(request: NextRequest) {
     console.log("Envoi du message WhatsApp de confirmation...");
 
     try {
-      // Fonction pour formater les dates et heures
+      // Fonction pour formater les dates et heures en utilisant toZonedTime et format
       function formatBookingDateTime(isoString: string): {
         date: string;
         time: string;
       } {
-        const date = new Date(isoString);
+        const date = toZonedTime(new Date(isoString), TIMEZONE);
         return {
-          date: date.toLocaleDateString("fr-FR", {
-            day: "numeric",
-            month: "long",
-          }),
-          time: date.toLocaleTimeString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          date: format(date, "d MMMM", { locale: fr, timeZone: TIMEZONE }),
+          time: format(date, "HH:mm", { timeZone: TIMEZONE }),
         };
       }
 
@@ -364,7 +362,7 @@ export async function POST(request: NextRequest) {
         `Si vous avez des questions, n'hésitez pas à me contacter.\n` +
         `À très bientôt !\n\n` +
         `Eunice – SHUGAMADE\n` +
-        `📞 +242 06 536 67 16`;
+        `📞 +242 06 597 56 23`;
 
       // Log du message formaté final pour débogage
       console.log("Message WhatsApp formaté final:", message);

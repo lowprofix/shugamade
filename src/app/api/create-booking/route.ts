@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { toZonedTime, format } from "date-fns-tz";
+import { fr } from "date-fns/locale";
+
+// Définir la constante TIMEZONE
+const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
 
 /**
  * API Route pour créer une réservation
@@ -192,15 +197,14 @@ export async function POST(request: NextRequest) {
           "Tentative d'envoi du message WhatsApp directement via Evolution API..."
         );
 
-        // Formater la date et l'heure pour le message
-        const startDate = new Date(bookingData.start);
-        const formattedDate = startDate.toLocaleDateString("fr-FR", {
-          day: "numeric",
-          month: "long",
+        // Formater la date et l'heure pour le message en utilisant toZonedTime et format avec le bon fuseau horaire
+        const startDate = toZonedTime(new Date(bookingData.start), TIMEZONE);
+        const formattedDate = format(startDate, "d MMMM", {
+          locale: fr,
+          timeZone: TIMEZONE,
         });
-        const formattedTime = startDate.toLocaleTimeString("fr-FR", {
-          hour: "2-digit",
-          minute: "2-digit",
+        const formattedTime = format(startDate, "HH:mm", {
+          timeZone: TIMEZONE,
         });
 
         // Construire le message de confirmation
@@ -225,7 +229,7 @@ export async function POST(request: NextRequest) {
           `Si vous avez des questions, n'hésitez pas à me contacter.\n` +
           `À très bientôt !\n\n` +
           `Eunice – SHUGAMADE\n` +
-          `📞 +242 06 536 67 16`;
+          `📞 +242 06 597 56 23`;
 
         // Log du message formaté final pour débogage
         console.log("Message WhatsApp formaté final:", message);

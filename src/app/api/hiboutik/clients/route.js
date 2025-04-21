@@ -133,15 +133,26 @@ export async function POST(request) {
 
     const hiboutikUrl = `${baseUrl}/customers/`;
 
-    // Validation des champs obligatoires
-    if (!clientData.customers_first_name || !clientData.customers_last_name) {
+    // Validation des champs obligatoires - Modification pour gérer le cas d'un nom de famille manquant
+    if (!clientData.customers_first_name) {
       return Response.json(
         {
           error: "Données invalides",
-          message: "Le prénom et le nom du client sont obligatoires",
+          message: "Le prénom du client est obligatoire",
         },
         { status: 400 }
       );
+    }
+
+    // Si le nom de famille est vide, on utilise le prénom
+    if (
+      !clientData.customers_last_name ||
+      clientData.customers_last_name === ""
+    ) {
+      console.log(
+        "Nom de famille manquant, utilisation du prénom comme nom de famille"
+      );
+      clientData.customers_last_name = clientData.customers_first_name;
     }
 
     // Log pour debug

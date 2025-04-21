@@ -315,7 +315,7 @@ export default function BookingClientWrapper({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
-      }, 15000);
+      }, 30000); // Augmentation du timeout à 30 secondes pour les connexions lentes
 
       try {
         if (isMultipleBooking && multipleBooking) {
@@ -358,8 +358,20 @@ export default function BookingClientWrapper({
           });
 
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+            const errorData = await response.json().catch(() => null);
+            const errorText = errorData
+              ? JSON.stringify(errorData)
+              : await response.text().catch(() => "Erreur inconnue");
+
+            console.error("Réponse d'erreur brute:", errorText);
+
+            if (response.status === 502 || response.status === 504) {
+              throw new Error(
+                "Problème de connexion avec le serveur de réservation. Veuillez réessayer plus tard."
+              );
+            } else {
+              throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+            }
           }
 
           const result = await response.json();
@@ -410,8 +422,20 @@ export default function BookingClientWrapper({
           });
 
           if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+            const errorData = await response.json().catch(() => null);
+            const errorText = errorData
+              ? JSON.stringify(errorData)
+              : await response.text().catch(() => "Erreur inconnue");
+
+            console.error("Réponse d'erreur brute:", errorText);
+
+            if (response.status === 502 || response.status === 504) {
+              throw new Error(
+                "Problème de connexion avec le serveur de réservation. Veuillez réessayer plus tard ou contacter directement le salon."
+              );
+            } else {
+              throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+            }
           }
 
           const result = await response.json();
@@ -434,9 +458,23 @@ export default function BookingClientWrapper({
         });
       } catch (error: any) {
         console.error("Erreur lors de la création de la réservation:", error);
-        setBookingError(
-          error.message || "Une erreur est survenue lors de la réservation"
-        );
+
+        // Message d'erreur plus convivial et informatif
+        let errorMessage = "Une erreur est survenue lors de la réservation";
+
+        if (
+          error.message.includes("fetch failed") ||
+          error.message.includes("network") ||
+          error.message.includes("timeout") ||
+          error.message.includes("Problème de connexion")
+        ) {
+          errorMessage =
+            "Problème de connexion avec le serveur de réservation. Veuillez réessayer plus tard ou contacter directement le salon au +242 06 597 56 23.";
+        } else if (error.message.includes("créée")) {
+          errorMessage = error.message;
+        }
+
+        setBookingError(errorMessage);
         setFadeOut(false);
       } finally {
         clearTimeout(timeoutId);
@@ -444,7 +482,7 @@ export default function BookingClientWrapper({
     } catch (error: any) {
       console.error("Erreur globale lors de la réservation:", error);
       setBookingError(
-        error.message || "Une erreur est survenue lors de la réservation"
+        "Une erreur est survenue lors de la préparation de votre réservation. Veuillez réessayer."
       );
       setFadeOut(false);
     }

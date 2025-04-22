@@ -469,6 +469,21 @@ async function sendReminderWithFallback(
  */
 export async function GET(request: NextRequest) {
   try {
+    // Vérification de l'authentification
+    const authHeader = request.headers.get('authorization');
+    const apiKey = process.env.API_SECRET_KEY;
+    
+    // Si une clé API est configurée, vérifier l'authentification
+    if (apiKey && (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== apiKey)) {
+      // Permettre l'accès sans authentification en local pour le développement
+      const isLocalDevelopment = process.env.NODE_ENV === 'development';
+      if (!isLocalDevelopment) {
+        return NextResponse.json(
+          { success: false, error: 'Non autorisé' },
+          { status: 401 }
+        );
+      }
+    }
     // Utiliser uniquement les données réelles du calendrier
     console.log("Utilisation des données réelles du calendrier");
     const bookings = await fetchBookings();

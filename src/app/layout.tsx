@@ -27,11 +27,17 @@ export const metadata: Metadata = {
     siteName: "Shugamade",
     images: [
       {
-        url: "https://www.shugamade.com/opengraph-image.png", // Cette image sera générée automatiquement
+        url: "/images/meta/opengraph-image.jpg", // Image statique pour WhatsApp
         width: 1200,
         height: 630,
         alt: "Shugamade - Traitements capillaires naturels",
       },
+      {
+        url: "https://www.shugamade.com/opengraph-image.png", // Image générée dynamiquement
+        width: 1200,
+        height: 630,
+        alt: "Shugamade - Traitements capillaires naturels",
+      }
     ],
     locale: "fr_FR",
     type: "website",
@@ -40,7 +46,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Shugamade",
     description: "Spécialiste des traitement capillaire naturel",
-    images: ["https://www.shugamade.com/twitter-image.png"], // Cette image sera générée automatiquement
+    images: [
+      "/images/meta/twitter-image.jpg", // Image statique pour WhatsApp
+      "https://www.shugamade.com/twitter-image.png" // Image générée dynamiquement
+    ],
   },
 };
 

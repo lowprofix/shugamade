@@ -1,0 +1,23 @@
+name: Appointment Reminders
+
+on:
+  schedule:
+    # Exécuter tous les jours à 17h00 UTC+1 (fuseau horaire de Lagos)
+    # Notez que GitHub Actions utilise UTC, donc 16h00 UTC = 17h00 UTC+1
+    - cron: "0 16 * * *"
+
+  # Permet également de déclencher manuellement le workflow
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send appointment reminders
+        run: |
+          curl -X GET "${{ secrets.APP_URL }}/api/reminder?force=true" \
+            -H "Authorization: Bearer ${{ secrets.API_SECRET_KEY }}"
+
+      - name: Log completion
+        run: echo "Appointment reminders job completed at $(date)"

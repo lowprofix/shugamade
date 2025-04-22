@@ -1,13 +1,33 @@
 // API Route pour gérer les clients Hiboutik
 // Utilise les Server Components de Next.js pour éviter les problèmes CORS
+import { NextRequest, NextResponse } from "next/server";
 
 // Configuration des identifiants Hiboutik depuis les variables d'environnement
 const apiLogin = process.env.HIBOUTIK_API_LOGIN;
 const apiKey = process.env.HIBOUTIK_API_KEY;
 const baseUrl = process.env.HIBOUTIK_BASE_URL;
 
+// Interface pour les données client Hiboutik
+interface HiboutikClientData {
+  customers_first_name: string;
+  customers_last_name: string;
+  customers_phone_number: string;
+  customers_email: string;
+  [key: string]: any; // Pour les autres propriétés possibles
+}
+
+// Interface pour les headers d'authentification
+interface HiboutikAuthHeaders {
+  "Content-Type": string;
+  Accept: string;
+  Authorization: string;
+  "API-LOGIN": string;
+  "API-KEY": string;
+  [key: string]: string; // Signature d'index pour permettre l'usage avec HeadersInit
+}
+
 // Fonction utilitaire pour créer les headers d'authentification
-function getAuthHeaders() {
+function getAuthHeaders(): HiboutikAuthHeaders {
   // Vérifier que les variables d'environnement sont définies
   if (!apiLogin || !apiKey || !baseUrl) {
     console.error("Variables d'environnement Hiboutik manquantes");
@@ -28,11 +48,11 @@ function getAuthHeaders() {
 }
 
 // GET - Récupérer la liste des clients
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   try {
     // Vérifier que les variables d'environnement sont définies
     if (!apiLogin || !apiKey || !baseUrl) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Configuration Hiboutik incomplète",
           message: "Variables d'environnement manquantes",
@@ -64,7 +84,7 @@ export async function GET() {
         body: errorText,
       });
 
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Erreur lors de l'appel à l'API Hiboutik",
           details: errorText,
@@ -78,13 +98,13 @@ export async function GET() {
     const data = await response.json();
 
     // Retourne les données au format JSON
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Exception GET clients:", error);
-    return Response.json(
+    return NextResponse.json(
       {
         error: "Erreur serveur",
-        message: error.message,
+        message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }
     );
@@ -92,11 +112,11 @@ export async function GET() {
 }
 
 // POST - Créer un nouveau client
-export async function POST(request) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Vérifier que les variables d'environnement sont définies
     if (!apiLogin || !apiKey || !baseUrl) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Configuration Hiboutik incomplète",
           message: "Variables d'environnement manquantes",
@@ -106,12 +126,12 @@ export async function POST(request) {
     }
 
     // Récupération des données du corps de la requête
-    let clientData;
+    let clientData: HiboutikClientData;
     try {
       clientData = await request.json();
     } catch (error) {
       console.error("Erreur de parsing JSON:", error);
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Format JSON invalide",
           message: "Le corps de la requête doit être un JSON valide",
@@ -122,7 +142,7 @@ export async function POST(request) {
 
     // Vérification si le corps est vide
     if (!clientData || Object.keys(clientData).length === 0) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Données manquantes",
           message: "Le corps de la requête ne peut pas être vide",
@@ -135,7 +155,7 @@ export async function POST(request) {
 
     // Validation des champs obligatoires - Modification pour gérer le cas d'un nom de famille manquant
     if (!clientData.customers_first_name) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Données invalides",
           message: "Le prénom du client est obligatoire",
@@ -178,7 +198,7 @@ export async function POST(request) {
         requestData: clientData,
       });
 
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Erreur lors de la création du client",
           details: errorText,
@@ -193,13 +213,13 @@ export async function POST(request) {
     const data = await response.json();
 
     // Retourne les données au format JSON avec statut 201 (Created)
-    return Response.json(data, { status: 201 });
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("Exception POST client:", error);
-    return Response.json(
+    return NextResponse.json(
       {
         error: "Erreur serveur",
-        message: error.message,
+        message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }
     );

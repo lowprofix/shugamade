@@ -1,13 +1,42 @@
 // API Route pour gérer les produits et stocks Hiboutik
 // Utilise les Server Components de Next.js pour éviter les problèmes CORS
+import { NextResponse } from "next/server";
 
 // Configuration des identifiants Hiboutik depuis les variables d'environnement
-const apiLogin = process.env.HIBOUTIK_API_LOGIN;
-const apiKey = process.env.HIBOUTIK_API_KEY;
+const apiLogin = process.env.HIBOUTIK_API_LOGIN || "";
+const apiKey = process.env.HIBOUTIK_API_KEY || "";
 const baseUrl = process.env.HIBOUTIK_BASE_URL;
 
+// Interfaces pour les données de produit et de stock
+interface HiboutikProductData {
+  product_id: string | number;
+  [key: string]: any; // Autres propriétés du produit
+}
+
+interface HiboutikStockData {
+  product_id: string | number;
+  [key: string]: any; // Propriétés du stock
+}
+
+// Interface pour les headers d'authentification
+interface HiboutikAuthHeaders {
+  "Content-Type": string;
+  Accept: string;
+  Authorization: string;
+  "API-LOGIN": string;
+  "API-KEY": string;
+  [key: string]: string; // Signature d'index pour permettre l'usage avec HeadersInit
+}
+
+// Interface pour la réponse combinée
+interface ProductsResponse {
+  products: HiboutikProductData[] | null;
+  stocks?: HiboutikStockData[] | null;
+  error?: string;
+}
+
 // Fonction utilitaire pour créer les headers d'authentification
-function getAuthHeaders() {
+function getAuthHeaders(): HiboutikAuthHeaders {
   // Vérifier que les variables d'environnement sont définies
   if (!apiLogin || !apiKey || !baseUrl) {
     console.error("Variables d'environnement Hiboutik manquantes");
@@ -28,11 +57,11 @@ function getAuthHeaders() {
 }
 
 // GET - Récupérer la liste des produits avec leurs stocks
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   try {
     // Vérifier que les variables d'environnement sont définies
     if (!apiLogin || !apiKey || !baseUrl) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Configuration Hiboutik incomplète",
           message: "Variables d'environnement manquantes",
@@ -57,7 +86,7 @@ export async function GET() {
         body: errorText,
       });
 
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Erreur lors de l'appel à l'API Hiboutik pour les produits",
           details: errorText,
@@ -67,7 +96,7 @@ export async function GET() {
       );
     }
 
-    const products = await productsResponse.json();
+    const products = (await productsResponse.json()) as HiboutikProductData[];
 
     // 2. Ensuite récupérer tous les stocks
     const stocksUrl = `${baseUrl}/stock_available/all_wh`;
@@ -85,14 +114,14 @@ export async function GET() {
       );
 
       // Retourner uniquement les produits sans informations de stock
-      return Response.json({
+      return NextResponse.json({
         products: products,
         stocks: null,
         error: "Impossible de récupérer les informations de stock",
-      });
+      } as ProductsResponse);
     }
 
-    const stocks = await stocksResponse.json();
+    const stocks = (await stocksResponse.json()) as HiboutikStockData[];
 
     // 3. Combiner les produits avec leurs informations de stock
     const productsWithStock = products.map((product) => {
@@ -106,15 +135,15 @@ export async function GET() {
     });
 
     // Retourner les produits avec leurs stocks
-    return Response.json({
+    return NextResponse.json({
       products: productsWithStock,
-    });
+    } as ProductsResponse);
   } catch (error) {
     console.error("Exception GET produits:", error);
-    return Response.json(
+    return NextResponse.json(
       {
         error: "Erreur serveur",
-        message: error.message,
+        message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }
     );

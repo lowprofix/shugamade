@@ -176,7 +176,8 @@ export default function ServiceSelection({
           matchesCategory =
             service.name.toLowerCase().includes("électrothérapie") ||
             service.name.toLowerCase().includes("luminothérapie") ||
-            service.name.toLowerCase().includes("massage");
+            service.name.toLowerCase().includes("massage") ||
+            service.name.toLowerCase().includes("boost");
           break;
         case "promo":
           matchesCategory = service.isPromo === true;
@@ -469,7 +470,7 @@ export default function ServiceSelection({
                     )}
                     {service.description && (
                       <p
-                        className="text-xs text-gray-600 dark:text-gray-300 mb-1 line-clamp-1"
+                        className="text-xs text-gray-600 dark:text-gray-300 mb-1"
                         title={service.description}
                       >
                         {service.description}

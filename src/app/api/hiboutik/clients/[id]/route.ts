@@ -1,13 +1,38 @@
 // API Route pour gérer un client spécifique Hiboutik (GET, PUT, DELETE)
 // Utilise les Server Components de Next.js pour éviter les problèmes CORS
+import { NextRequest, NextResponse } from "next/server";
 
 // Configuration des identifiants Hiboutik
-const apiLogin = process.env.HIBOUTIK_API_LOGIN;
-const apiKey = process.env.HIBOUTIK_API_KEY;
+const apiLogin = process.env.HIBOUTIK_API_LOGIN || "";
+const apiKey = process.env.HIBOUTIK_API_KEY || "";
 const baseUrl = process.env.HIBOUTIK_BASE_URL;
 
+// Interface pour les paramètres de route
+interface RouteParams {
+  params: {
+    id: string;
+  };
+}
+
+// Interface pour les données de mise à jour du client
+interface ClientUpdateData {
+  customers_attribute: string;
+  new_value: string;
+  [key: string]: any;
+}
+
+// Interface pour les headers d'authentification
+interface HiboutikAuthHeaders {
+  "Content-Type": string;
+  Accept: string;
+  Authorization: string;
+  "API-LOGIN": string;
+  "API-KEY": string;
+  [key: string]: string; // Signature d'index pour permettre l'usage avec HeadersInit
+}
+
 // Fonction utilitaire pour créer les headers d'authentification
-function getAuthHeaders() {
+function getAuthHeaders(): HiboutikAuthHeaders {
   // Encodage des identifiants en Base64 pour l'authentification HTTP Basic
   const credentials = Buffer.from(`${apiLogin}:${apiKey}`).toString("base64");
 
@@ -22,12 +47,15 @@ function getAuthHeaders() {
 }
 
 // GET - Récupérer les détails d'un client spécifique
-export async function GET(request, { params }) {
+export async function GET(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const customerId = params.id;
 
     if (!customerId || isNaN(parseInt(customerId))) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "ID client invalide",
           message: "L'ID du client doit être un nombre",
@@ -60,7 +88,7 @@ export async function GET(request, { params }) {
 
       // Si le client n'existe pas
       if (response.status === 404) {
-        return Response.json(
+        return NextResponse.json(
           {
             error: "Client non trouvé",
             message: `Le client avec l'ID ${customerId} n'existe pas`,
@@ -69,7 +97,7 @@ export async function GET(request, { params }) {
         );
       }
 
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Erreur lors de la récupération du client",
           details: errorText,
@@ -83,13 +111,13 @@ export async function GET(request, { params }) {
     const data = await response.json();
 
     // Retourne les données au format JSON
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Exception GET client spécifique:", error);
-    return Response.json(
+    return NextResponse.json(
       {
         error: "Erreur serveur",
-        message: error.message,
+        message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }
     );
@@ -97,12 +125,15 @@ export async function GET(request, { params }) {
 }
 
 // PUT - Mettre à jour un client existant
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const customerId = params.id;
 
     if (!customerId || isNaN(parseInt(customerId))) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "ID client invalide",
           message: "L'ID du client doit être un nombre",
@@ -112,12 +143,12 @@ export async function PUT(request, { params }) {
     }
 
     // Récupération des données du corps de la requête
-    let updateData;
+    let updateData: ClientUpdateData;
     try {
       updateData = await request.json();
     } catch (error) {
       console.error("Erreur de parsing JSON:", error);
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Format JSON invalide",
           message: "Le corps de la requête doit être un JSON valide",
@@ -128,7 +159,7 @@ export async function PUT(request, { params }) {
 
     // Vérification si le corps est vide
     if (!updateData || Object.keys(updateData).length === 0) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Données manquantes",
           message: "Le corps de la requête ne peut pas être vide",
@@ -139,7 +170,7 @@ export async function PUT(request, { params }) {
 
     // Validation des données selon le format attendu par Hiboutik
     if (!updateData.customers_attribute || !updateData.new_value) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Données invalides",
           message:
@@ -175,7 +206,7 @@ export async function PUT(request, { params }) {
 
       // Si le client n'existe pas
       if (response.status === 404) {
-        return Response.json(
+        return NextResponse.json(
           {
             error: "Client non trouvé",
             message: `Le client avec l'ID ${customerId} n'existe pas`,
@@ -184,7 +215,7 @@ export async function PUT(request, { params }) {
         );
       }
 
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Erreur lors de la mise à jour du client",
           details: errorText,
@@ -198,13 +229,13 @@ export async function PUT(request, { params }) {
     const data = await response.json();
 
     // Retourne les données au format JSON
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Exception PUT client:", error);
-    return Response.json(
+    return NextResponse.json(
       {
         error: "Erreur serveur",
-        message: error.message,
+        message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }
     );
@@ -212,12 +243,15 @@ export async function PUT(request, { params }) {
 }
 
 // DELETE - Supprimer un client
-export async function DELETE(request, { params }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const customerId = params.id;
 
     if (!customerId || isNaN(parseInt(customerId))) {
-      return Response.json(
+      return NextResponse.json(
         {
           error: "ID client invalide",
           message: "L'ID du client doit être un nombre",
@@ -250,7 +284,7 @@ export async function DELETE(request, { params }) {
 
       // Si le client n'existe pas
       if (response.status === 404) {
-        return Response.json(
+        return NextResponse.json(
           {
             error: "Client non trouvé",
             message: `Le client avec l'ID ${customerId} n'existe pas`,
@@ -259,7 +293,7 @@ export async function DELETE(request, { params }) {
         );
       }
 
-      return Response.json(
+      return NextResponse.json(
         {
           error: "Erreur lors de la suppression du client",
           details: errorText,
@@ -270,7 +304,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Retourne un message de succès
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         message: `Le client avec l'ID ${customerId} a été supprimé avec succès`,
@@ -279,10 +313,10 @@ export async function DELETE(request, { params }) {
     );
   } catch (error) {
     console.error("Exception DELETE client:", error);
-    return Response.json(
+    return NextResponse.json(
       {
         error: "Erreur serveur",
-        message: error.message,
+        message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }
     );

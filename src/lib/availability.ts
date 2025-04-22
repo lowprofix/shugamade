@@ -4,6 +4,8 @@ import { toZonedTime, format } from "date-fns-tz";
 export type Booking = {
   start: string; // ISO string
   end: string; // ISO string
+  title?: string; // Titre de l'événement
+  description?: string; // Description de l'événement, qui peut contenir le numéro de téléphone
 };
 
 export type TimeSlot = {
@@ -190,6 +192,14 @@ function generateOptimizedSlots(
         }
       }
 
+      // CORRECTION: S'assurer que l'heure de début est bien postérieure à la fin de la réservation précédente
+      // Si l'heure de début est antérieure à la fin de la réservation précédente, on la définit à la fin de cette réservation
+      if (slotStart.getTime() < currentEnd.getTime()) {
+        slotStart = new Date(currentEnd.getTime());
+        // Arrondir à nouveau au prochain multiple de 30 minutes
+        slotStart = roundToNextMinutesMultiple(slotStart, stepMinutes);
+      }
+
       // Générer des créneaux jusqu'à ce qu'il n'y ait plus assez de temps
       while (
         slotStart.getTime() + durationMinutes * 60000 <=
@@ -315,7 +325,7 @@ function formatAvailableSlots(
 /**
  * Récupère les réservations depuis l'API n8n
  */
-async function fetchBookings(): Promise<Booking[]> {
+export async function fetchBookings(): Promise<Booking[]> {
   try {
     // URL du webhook calendar events depuis les variables d'environnement
     const calendarEventsUrl = process.env.N8N_WEBHOOK_CALENDAR_EVENTS;
@@ -345,6 +355,8 @@ async function fetchBookings(): Promise<Booking[]> {
     const bookings: Booking[] = rawEvents.map((event: any) => ({
       start: event.start.dateTime,
       end: event.end.dateTime,
+      title: event.summary || "", // Récupérer le titre de l'événement
+      description: event.description || "", // Récupérer la description de l'événement
     }));
 
     console.log(

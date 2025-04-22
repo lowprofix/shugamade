@@ -241,7 +241,7 @@ export default function Footer({ scrollToSection }: FooterProps) {
         {/* Signature */}
         <div className="text-center mt-8 text-xs text-gray-500 dark:text-gray-500 flex items-center justify-center">
           <span>Conçu avec</span>
-          <Heart className="w-3 h-3 mx-1 text-[#ffb2dd] animate-pulse-slow" />
+          <Heart className="w-3 h-3 mx-1 text-[#ff0090] dark:text-[#fffb28] animate-pulse-slow" />
           <span>par ShugaMade</span>
         </div>
 

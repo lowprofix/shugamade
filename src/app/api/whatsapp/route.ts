@@ -45,6 +45,76 @@ function formatPhoneNumber(phoneNumber: string): string {
 }
 
 /**
+ * Vérifie si un numéro est enregistré sur WhatsApp
+ * @param phoneNumber Numéro de téléphone à vérifier
+ * @returns true si le numéro est enregistré sur WhatsApp, false sinon
+ */
+async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
+  try {
+    // Configuration de l'API Evolution depuis les variables d'environnement
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+
+    // Vérifier que les variables d'environnement sont définies
+    if (!serverUrl || !instanceName || !apiKey) {
+      console.error(
+        "Variables d'environnement WhatsApp manquantes pour la vérification de numéro"
+      );
+      return false;
+    }
+
+    // Formater le numéro de téléphone
+    const formattedNumber = formatPhoneNumber(phoneNumber);
+
+    // Appel à l'API Evolution pour vérifier si le numéro est enregistré sur WhatsApp
+    const response = await fetch(
+      `${serverUrl}/chat/whatsappNumbers/${instanceName}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: apiKey,
+        },
+        body: JSON.stringify({
+          numbers: [formattedNumber],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Erreur lors de la vérification du numéro WhatsApp");
+      return false;
+    }
+
+    const data = await response.json();
+
+    // Vérifier si le numéro est dans la liste des numéros WhatsApp
+    // La structure de réponse dépend de l'API Evolution, ajuster si nécessaire
+    if (data && Array.isArray(data) && data.length > 0) {
+      // Chercher si le numéro spécifique est valide
+      const numberResult = data.find(
+        (item) =>
+          item.number === formattedNumber ||
+          item.jid?.includes(formattedNumber.substring(1))
+      );
+      if (numberResult && numberResult.exists === true) {
+        console.log(`Le numéro ${formattedNumber} est enregistré sur WhatsApp`);
+        return true;
+      }
+    }
+
+    console.log(
+      `Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`
+    );
+    return false;
+  } catch (error) {
+    console.error("Erreur lors de la vérification du numéro WhatsApp:", error);
+    return false;
+  }
+}
+
+/**
  * API pour envoyer des messages WhatsApp via EvolutionAPI
  */
 export async function POST(request: NextRequest) {
@@ -83,6 +153,20 @@ export async function POST(request: NextRequest) {
 
     // Utiliser la nouvelle fonction de formatage de numéro de téléphone
     const phoneNumber = formatPhoneNumber(data.phoneNumber);
+
+    // Vérifier si le numéro est enregistré sur WhatsApp
+    const isWhatsApp = await isWhatsAppNumber(phoneNumber);
+    if (!isWhatsApp) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Le numéro n'est pas enregistré sur WhatsApp",
+          whatsapp: false,
+          phoneNumber: phoneNumber,
+        },
+        { status: 400 }
+      );
+    }
 
     // Construction du payload pour EvolutionAPI
     const payload = {

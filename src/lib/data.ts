@@ -82,8 +82,8 @@ export const services: Service[] = [
   {
     id: 14,
     name: "Séance Boost",
-    price: "25 000 FCFA",
-    duration: "40 min",
+    price: "20 000 FCFA",
+    duration: "30 min",
     description:
       "La séance se compose de la luminothérapie de l'électrothérapie et du massage crânien.",
     color: "brand",
@@ -93,7 +93,7 @@ export const services: Service[] = [
       "Traitement par électrothérapie",
       "Massage crânien du cuir chevelu",
     ],
-    durationMinutes: 40,
+    durationMinutes: 30,
   },
   {
     id: 10,

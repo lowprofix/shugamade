@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchBookings, Booking } from "@/lib/availability";
 import { toZonedTime, format } from "date-fns-tz";
-import { getMockBookings } from "../reminder/test-data/route";
 
 // Constantes
 const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
@@ -470,21 +469,9 @@ async function sendReminderWithFallback(
  */
 export async function GET(request: NextRequest) {
   try {
-    // Vérifier si nous devons utiliser les données de test
-    const useTestData =
-      request.nextUrl.searchParams.get("useTestData") === "true";
-
-    // On récupère tous les rendez-vous (réels ou de test)
-    let bookings: Booking[];
-    if (useTestData) {
-      console.log(
-        "Utilisation des données de test pour la simulation de rappels"
-      );
-      bookings = getMockBookings();
-    } else {
-      console.log("Utilisation des données réelles du calendrier");
-      bookings = await fetchBookings();
-    }
+    // Utiliser uniquement les données réelles du calendrier
+    console.log("Utilisation des données réelles du calendrier");
+    const bookings = await fetchBookings();
 
     // Date actuelle dans le fuseau horaire correct
     const now = toZonedTime(new Date(), TIMEZONE);

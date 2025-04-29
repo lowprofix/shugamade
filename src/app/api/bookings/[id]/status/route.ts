@@ -7,7 +7,7 @@ import { handleUpdateBookingStatus } from "../../lib/controller";
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  return handleUpdateBookingStatus(request, { params });
+  return handleUpdateBookingStatus(request, context);
 }

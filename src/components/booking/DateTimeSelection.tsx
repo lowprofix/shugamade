@@ -64,7 +64,12 @@ export default function DateTimeSelection({
   const [selectedDateObj, setSelectedDateObj] = useState<Date | null>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [availableDatesObj, setAvailableDatesObj] = useState<Date[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+
+  // Remplacer le tableau de créneaux par une Map pour éviter les doublons
+  const [availableSlotsMap, setAvailableSlotsMap] = useState<
+    Map<string, AvailableSlot>
+  >(new Map());
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
@@ -164,34 +169,55 @@ export default function DateTimeSelection({
 
     setLoadingMoreSlots(true);
 
-    // Charger les créneaux pour le mois sélectionné avec un nombre de jours optimal
-    const startDate = new Date(month.getFullYear(), month.getMonth(), 1);
-    // Calculer le nombre de jours dans le mois plutôt qu'utiliser une valeur fixe
-    const daysInMonth = new Date(
+    // Préparer les dates stratégiques pour couvrir tout le mois
+    const startOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+    const midOfMonth = new Date(month.getFullYear(), month.getMonth(), 15);
+
+    // Date spécifique pour la fin du mois (pour s'assurer que le 31 est couvert)
+    const lastDayOfMonth = new Date(
       month.getFullYear(),
       month.getMonth() + 1,
       0
     ).getDate();
+    const endOfMonth = new Date(
+      month.getFullYear(),
+      month.getMonth(),
+      lastDayOfMonth - 5
+    ); // 5 jours avant la fin du mois
 
-    fetchAvailableSlots(formatToYYYYMMDD(startDate))
-      .then((slots) => {
-        // Mettre à jour les créneaux disponibles
-        setAvailableSlots((prevSlots) => {
-          // Filtrer les créneaux existants pour éviter les doublons
-          const existingSlotKeys = new Set(
-            prevSlots.map((slot) => `${slot.date}-${slot.start}-${slot.end}`)
-          );
+    // Tableau pour stocker toutes les promesses
+    const promises = [
+      fetchAvailableSlots(formatToYYYYMMDD(startOfMonth)),
+      fetchAvailableSlots(formatToYYYYMMDD(midOfMonth)),
+    ];
 
-          const newUniqueSlots = slots.filter(
-            (slot) =>
-              !existingSlotKeys.has(`${slot.date}-${slot.start}-${slot.end}`)
-          );
+    // Ajouter une requête supplémentaire pour les mois de 30 ou 31 jours
+    if (lastDayOfMonth > 28) {
+      promises.push(fetchAvailableSlots(formatToYYYYMMDD(endOfMonth)));
+    }
 
-          return [...prevSlots, ...newUniqueSlots];
+    // Attendre que toutes les requêtes soient terminées
+    Promise.all(promises)
+      .then((results) => {
+        // Fusionner tous les créneaux obtenus
+        const allSlots = results.flat();
+
+        // Mettre à jour la Map des créneaux disponibles (évite les doublons par définition)
+        setAvailableSlotsMap((prevMap) => {
+          const newMap = new Map(prevMap);
+
+          allSlots.forEach((slot) => {
+            const key = `${slot.date}-${slot.start}-${slot.end}`;
+            if (!newMap.has(key)) {
+              newMap.set(key, slot);
+            }
+          });
+
+          return newMap;
         });
 
         // Extraire les dates uniques des créneaux
-        const uniqueDates = [...new Set(slots.map((slot) => slot.date))];
+        const uniqueDates = [...new Set(allSlots.map((slot) => slot.date))];
 
         // Mettre à jour les dates disponibles
         setAvailableDates((prevDates) => {
@@ -217,6 +243,9 @@ export default function DateTimeSelection({
 
         // Ajouter le mois à la liste des mois chargés
         setLoadedMonths((prevMonths) => [...prevMonths, new Date(month)]);
+      })
+      .catch((error) => {
+        console.error("Erreur lors du chargement des créneaux:", error);
       })
       .finally(() => {
         setLoadingMoreSlots(false);
@@ -395,8 +424,13 @@ export default function DateTimeSelection({
     const loadInitialSlots = async () => {
       const slots = await fetchAvailableSlots(formatToYYYYMMDD(new Date()));
 
-      // Mettre à jour les créneaux disponibles
-      setAvailableSlots(slots);
+      // Mettre à jour la Map des créneaux disponibles
+      const slotsMap = new Map();
+      slots.forEach((slot) => {
+        const key = `${slot.date}-${slot.start}-${slot.end}`;
+        slotsMap.set(key, slot);
+      });
+      setAvailableSlotsMap(slotsMap);
 
       // Extraire les dates uniques des créneaux
       const uniqueDates = [...new Set(slots.map((slot) => slot.date))];
@@ -485,19 +519,21 @@ export default function DateTimeSelection({
         console.log(
           `Préchargement de ${monthsToLoad.length} mois futurs pour réservation multiple`
         );
-        monthsToLoad.forEach((month) => {
+        monthsToLoad.forEach((month, index) => {
           setTimeout(
             () => loadMoreSlots(month),
-            300 * monthsToLoad.indexOf(month)
+            300 * index // Décaler les requêtes pour ne pas surcharger l'API
           );
         });
       }
     }
-  }, [isMultipleBooking, initialLoadComplete, services[0].name]);
+  }, [isMultipleBooking, initialLoadComplete, services[0]?.name, loadedMonths]);
 
-  // Filtrer les créneaux pour la date sélectionnée
+  // Filtrer les créneaux pour la date sélectionnée depuis la Map
   const slotsForSelectedDate = selectedDate
-    ? availableSlots.filter((slot) => slot.date === selectedDate)
+    ? Array.from(availableSlotsMap.values()).filter(
+        (slot) => slot.date === selectedDate
+      )
     : [];
 
   return (

@@ -72,6 +72,9 @@ export default function BookingClientWrapper({
     phone: "",
     phoneCountryCode: "+242", // Indicatif Congo Brazzaville par défaut
   });
+  // Nouvel état pour contrôler l'envoi de notifications WhatsApp
+  const [sendWhatsAppConfirmation, setSendWhatsAppConfirmation] =
+    useState(true);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
@@ -206,11 +209,17 @@ export default function BookingClientWrapper({
     }, 300);
   };
 
-  // Fonction pour gérer les changements dans les informations client
+  // Fonction pour gérer les changements de formulaire
   const handleCustomerInfoChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setCustomerInfo((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setCustomerInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Nouvelle fonction pour gérer le toggle des notifications WhatsApp
+  const handleToggleWhatsAppConfirmation = (enabled: boolean) => {
+    setSendWhatsAppConfirmation(enabled);
   };
 
   // Fonction pour passer à l'étape suivante
@@ -331,6 +340,7 @@ export default function BookingClientWrapper({
         totalDuration: calculateTotalDuration(),
         isCustomService: selectedServices.length > 1,
         locationId: selectedLocation?.id || 1, // Utiliser l'ID du lieu sélectionné ou 1 (BZV) par défaut
+        sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
       };
 
       // 3. Créer la réservation avec un timeout
@@ -351,6 +361,7 @@ export default function BookingClientWrapper({
             clientEmail: customerInfo.email || null,
             hiboutikClientId: customerInfoWithHiboutik.hiboutikClientId,
             locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
+            sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
 
             // Informations sur le pack
             packageName: generateCombinedServiceName(),
@@ -428,6 +439,7 @@ export default function BookingClientWrapper({
             clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
             clientEmail: customerInfo.email || null,
             locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
+            sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
           });
 
           const response = await fetch("/api/create-booking", {
@@ -443,6 +455,7 @@ export default function BookingClientWrapper({
               clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
               clientEmail: customerInfo.email || null,
               locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
+              sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
             }),
             signal: controller.signal,
           });
@@ -600,6 +613,10 @@ export default function BookingClientWrapper({
                   isMultipleBooking={isMultipleBooking}
                   multipleBooking={multipleBooking}
                   selectedLocation={selectedLocation}
+                  sendWhatsAppConfirmation={sendWhatsAppConfirmation}
+                  onToggleWhatsAppConfirmation={
+                    handleToggleWhatsAppConfirmation
+                  }
                 />
               </Suspense>
             )}

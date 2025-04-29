@@ -21,10 +21,12 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 interface CustomerInfoFormProps {
   customerInfo: CustomerInfo;
@@ -38,6 +40,8 @@ interface CustomerInfoFormProps {
   isMultipleBooking: boolean;
   multipleBooking: MultipleBooking | null;
   selectedLocation: Location;
+  sendWhatsAppConfirmation: boolean;
+  onToggleWhatsAppConfirmation: (enabled: boolean) => void;
 }
 
 // Liste des indicatifs téléphoniques courants
@@ -64,6 +68,8 @@ export default function CustomerInfoForm({
   isMultipleBooking,
   multipleBooking,
   selectedLocation,
+  sendWhatsAppConfirmation,
+  onToggleWhatsAppConfirmation,
 }: CustomerInfoFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -354,6 +360,36 @@ export default function CustomerInfoForm({
                   </div>
                   {errors.email && (
                     <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                  )}
+                </div>
+
+                {/* Switch pour activer/désactiver les notifications WhatsApp */}
+                <div className="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start">
+                      <MessageSquare className="w-4 h-4 text-[#bfe0fb] mt-0.5 mr-2 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Notifications WhatsApp
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Recevoir les confirmations et rappels par WhatsApp
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={sendWhatsAppConfirmation}
+                      onCheckedChange={onToggleWhatsAppConfirmation}
+                      className="data-[state=checked]:bg-[#bfe0fb]"
+                    />
+                  </div>
+
+                  {whatsappStatus === "unavailable" && (
+                    <div className="flex items-center text-orange-600 text-xs mt-2">
+                      <AlertCircle className="w-3 h-3 mr-1 text-orange-500" />
+                      Votre numéro n'est pas détecté sur WhatsApp. Les
+                      notifications seront envoyées par SMS.
+                    </div>
                   )}
                 </div>
 

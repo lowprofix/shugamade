@@ -27,6 +27,9 @@ type MultipleBookingRequest = {
     end: string; // Date et heure de fin (ISO)
     description?: string; // Description spécifique à cette séance
   }[];
+
+  // Paramètre pour l'envoi de la confirmation WhatsApp
+  sendWhatsAppConfirmation: boolean;
 };
 
 /**
@@ -312,158 +315,162 @@ export async function POST(request: NextRequest) {
     // Étape 3: Toutes les réservations ont été créées avec succès
     // Envoi d'un unique message WhatsApp de confirmation
     console.log("Toutes les réservations ont été créées avec succès");
-    console.log("Envoi du message WhatsApp de confirmation...");
 
-    try {
-      // Fonction pour formater les dates et heures en utilisant toZonedTime et format
-      function formatBookingDateTime(isoString: string): {
-        date: string;
-        time: string;
-      } {
-        const date = toZonedTime(new Date(isoString), TIMEZONE);
-        return {
-          date: format(date, "d MMMM", { locale: fr, timeZone: TIMEZONE }),
-          time: format(date, "HH:mm", { timeZone: TIMEZONE }),
-        };
-      }
+    // Vérifier si l'utilisateur a choisi de recevoir des notifications WhatsApp
+    if (multipleBookingData.sendWhatsAppConfirmation) {
+      console.log("Envoi du message WhatsApp de confirmation...");
 
-      // Construire le message WhatsApp avec toutes les réservations
-      let bookingsList = "";
-      multipleBookingData.bookings.forEach((booking, index) => {
-        const { date, time } = formatBookingDateTime(booking.start);
-        bookingsList += `${index + 1}. ${date} à ${time}\n`;
-      });
-
-      // Obtenir la date de la première réservation pour l'acompte
-      const firstBookingDate = formatBookingDateTime(
-        multipleBookingData.bookings[0].start
-      ).date;
-
-      // Construire le message de confirmation
-      const message =
-        `Bonjour ${multipleBookingData.clientName},\n\n` +
-        `Nous vous confirmons votre réservation pour votre pack "${multipleBookingData.packageName}".\n\n` +
-        `📅 Vos séances :\n${bookingsList}\n` +
-        `💰 Acompte\n` +
-        `• Un acompte de 5 000 FCFA est requis pour confirmer définitivement vos réservations.\n` +
-        `• Modes de paiement acceptés :\n` +
-        `  - Mobile Money: +242 06 597 56 23\n` +
-        `  - Airtel Money: +242 05 092 89 99\n\n` +
-        `L'acompte sera bien entendu déduit du montant total de la prestation.\n\n` +
-        `🔹 Préparation avant chaque séance\n` +
-        `✅ Cheveux propres et sans produit : Merci de vous assurer que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).\n\n` +
-        `⏳ Ponctualité\n` +
-        `• Merci d'arriver à l'heure afin de profiter pleinement de vos séances.\n` +
-        `• Un retard de plus de 30 minutes entraînera l'annulation de la séance sans possibilité de remboursement de l'acompte.\n\n` +
-        `❌ Annulation & Report\n` +
-        `• Toute annulation ou report doit être signalé au moins 24h à l'avance.\n` +
-        `• Au-delà de ce délai, l'acompte ne pourra pas être remboursé.\n\n` +
-        `Si vous avez des questions, n'hésitez pas à me contacter.\n` +
-        `À très bientôt !\n\n` +
-        `Eunice – SHUGAMADE\n` +
-        `📞 +242 06 597 56 23`;
-
-      // Log du message formaté final pour débogage
-      console.log("Message WhatsApp formaté final:", message);
-
-      // Configuration de l'API Evolution
-      const serverUrl = process.env.EVOLUTION_API_SERVER;
-      const instanceName = process.env.EVOLUTION_API_INSTANCE;
-      const apiKey = process.env.EVOLUTION_API_KEY;
-
-      // Vérifier que les variables d'environnement sont définies
-      if (!serverUrl || !instanceName || !apiKey) {
-        console.error("Variables d'environnement WhatsApp manquantes");
-        throw new Error("Configuration serveur WhatsApp incomplète");
-      }
-
-      // Fonction pour formater le numéro de téléphone
-      function formatPhoneNumber(phoneNumber: string): string {
-        // Supprimer tous les espaces
-        let formattedNumber = phoneNumber.replace(/\s+/g, "");
-
-        // S'assurer que le numéro commence par un +
-        if (!formattedNumber.startsWith("+")) {
-          formattedNumber = `+${formattedNumber}`;
+      try {
+        // Fonction pour formater les dates et heures en utilisant toZonedTime et format
+        function formatBookingDateTime(isoString: string): {
+          date: string;
+          time: string;
+        } {
+          const date = toZonedTime(new Date(isoString), TIMEZONE);
+          return {
+            date: format(date, "d MMMM", { locale: fr, timeZone: TIMEZONE }),
+            time: format(date, "HH:mm", { timeZone: TIMEZONE }),
+          };
         }
 
-        // Liste des pays qui utilisent un 0 comme indicateur national à supprimer
-        const countriesWithLeadingZero = [
-          "+33", // France
-          "+44", // Royaume-Uni
-          "+39", // Italie
-          "+34", // Espagne
-          "+49", // Allemagne
-          "+32", // Belgique
-          "+31", // Pays-Bas
-        ];
+        // Construire le message WhatsApp avec toutes les réservations
+        let bookingsList = "";
+        multipleBookingData.bookings.forEach((booking, index) => {
+          const { date, time } = formatBookingDateTime(booking.start);
+          bookingsList += `${index + 1}. ${date} à ${time}\n`;
+        });
 
-        // Vérifier et traiter le 0 après l'indicatif pays
-        for (const countryCode of countriesWithLeadingZero) {
-          if (
-            formattedNumber.startsWith(countryCode) &&
-            formattedNumber.length > countryCode.length &&
-            formattedNumber.charAt(countryCode.length) === "0"
-          ) {
-            formattedNumber = `${countryCode}${formattedNumber.substring(
-              countryCode.length + 1
-            )}`;
-            break;
+        // Obtenir la date de la première réservation pour l'acompte
+        const firstBookingDate = formatBookingDateTime(
+          multipleBookingData.bookings[0].start
+        ).date;
+
+        // Construire le message de confirmation
+        const message =
+          `Bonjour ${multipleBookingData.clientName},\n\n` +
+          `Nous vous confirmons votre réservation pour votre pack "${multipleBookingData.packageName}".\n\n` +
+          `📅 Vos séances :\n${bookingsList}\n` +
+          `💰 Acompte\n` +
+          `• Un acompte de 5 000 FCFA est requis pour confirmer définitivement vos réservations.\n` +
+          `• Modes de paiement acceptés :\n` +
+          `  - Mobile Money: +242 06 597 56 23\n` +
+          `  - Airtel Money: +242 05 092 89 99\n\n` +
+          `L'acompte sera bien entendu déduit du montant total de la prestation.\n\n` +
+          `🔹 Préparation avant chaque séance\n` +
+          `✅ Cheveux propres et sans produit : Merci de vous assurer que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).\n\n` +
+          `⏳ Ponctualité\n` +
+          `• Merci d'arriver à l'heure afin de profiter pleinement de vos séances.\n` +
+          `• Un retard de plus de 30 minutes entraînera l'annulation de la séance sans possibilité de remboursement de l'acompte.\n\n` +
+          `❌ Annulation & Report\n` +
+          `• Toute annulation ou report doit être signalé au moins 24h à l'avance.\n` +
+          `• Au-delà de ce délai, l'acompte ne pourra pas être remboursé.\n\n` +
+          `Si vous avez des questions, n'hésitez pas à me contacter.\n` +
+          `À très bientôt !\n\n` +
+          `Eunice – SHUGAMADE\n` +
+          `📞 +242 06 597 56 23`;
+
+        // Log du message formaté final pour débogage
+        console.log("Message WhatsApp formaté final:", message);
+
+        // Configuration de l'API Evolution
+        const serverUrl = process.env.EVOLUTION_API_SERVER;
+        const instanceName = process.env.EVOLUTION_API_INSTANCE;
+        const apiKey = process.env.EVOLUTION_API_KEY;
+
+        // Vérifier que les variables d'environnement sont définies
+        if (!serverUrl || !instanceName || !apiKey) {
+          console.error("Variables d'environnement WhatsApp manquantes");
+          throw new Error("Configuration serveur WhatsApp incomplète");
+        }
+
+        // Fonction pour formater le numéro de téléphone
+        function formatPhoneNumber(phoneNumber: string): string {
+          // Supprimer tous les espaces
+          let formattedNumber = phoneNumber.replace(/\s+/g, "");
+
+          // S'assurer que le numéro commence par un +
+          if (!formattedNumber.startsWith("+")) {
+            formattedNumber = `+${formattedNumber}`;
           }
+
+          // Liste des pays qui utilisent un 0 comme indicateur national à supprimer
+          const countriesWithLeadingZero = [
+            "+33", // France
+            "+44", // Royaume-Uni
+            "+39", // Italie
+            "+34", // Espagne
+            "+49", // Allemagne
+            "+32", // Belgique
+            "+31", // Pays-Bas
+          ];
+
+          // Vérifier et traiter le 0 après l'indicatif pays
+          for (const countryCode of countriesWithLeadingZero) {
+            if (
+              formattedNumber.startsWith(countryCode) &&
+              formattedNumber.length > countryCode.length &&
+              formattedNumber.charAt(countryCode.length) === "0"
+            ) {
+              formattedNumber = `${countryCode}${formattedNumber.substring(
+                countryCode.length + 1
+              )}`;
+              break;
+            }
+          }
+
+          return formattedNumber;
         }
 
-        return formattedNumber;
-      }
+        // Formater le numéro de téléphone
+        const phoneNumber = formatPhoneNumber(multipleBookingData.clientPhone);
+        console.log("Numéro de téléphone formaté pour WhatsApp:", phoneNumber);
 
-      // Formater le numéro de téléphone
-      const phoneNumber = formatPhoneNumber(multipleBookingData.clientPhone);
-      console.log("Numéro de téléphone formaté pour WhatsApp:", phoneNumber);
+        // Construction du payload pour EvolutionAPI
+        const payload = {
+          number: phoneNumber,
+          text: message,
+          delay: 1000,
+          linkPreview: true,
+        };
 
-      // Construction du payload pour EvolutionAPI
-      const payload = {
-        number: phoneNumber,
-        text: message,
-        delay: 1000,
-        linkPreview: true,
-      };
+        console.log("Payload pour Evolution API:", payload);
 
-      console.log("Payload pour Evolution API:", payload);
+        // Appel direct à Evolution API
+        const evolutionResponse = await fetch(
+          `${serverUrl}/message/sendText/${instanceName}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: apiKey,
+            },
+            body: JSON.stringify(payload),
+          }
+        );
 
-      // Appel direct à Evolution API
-      const evolutionResponse = await fetch(
-        `${serverUrl}/message/sendText/${instanceName}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: apiKey,
-          },
-          body: JSON.stringify(payload),
+        if (!evolutionResponse.ok) {
+          const errorText = await evolutionResponse.text();
+          console.error(
+            "Erreur lors de l'envoi du message WhatsApp via Evolution API:",
+            errorText
+          );
+          throw new Error(
+            `Erreur Evolution API: ${evolutionResponse.status} - ${errorText}`
+          );
         }
-      );
 
-      if (!evolutionResponse.ok) {
-        const errorText = await evolutionResponse.text();
+        const evolutionResult = await evolutionResponse.json();
+        console.log(
+          "Message WhatsApp envoyé avec succès via Evolution API:",
+          evolutionResult
+        );
+      } catch (whatsappError) {
         console.error(
-          "Erreur lors de l'envoi du message WhatsApp via Evolution API:",
-          errorText
+          "Erreur lors de l'envoi du message WhatsApp:",
+          whatsappError
         );
-        throw new Error(
-          `Erreur Evolution API: ${evolutionResponse.status} - ${errorText}`
-        );
+        // Ne pas bloquer la réponse en cas d'échec de l'envoi WhatsApp
       }
-
-      const evolutionResult = await evolutionResponse.json();
-      console.log(
-        "Message WhatsApp envoyé avec succès via Evolution API:",
-        evolutionResult
-      );
-    } catch (whatsappError) {
-      console.error(
-        "Erreur lors de l'envoi du message WhatsApp:",
-        whatsappError
-      );
-      // Ne pas bloquer la réponse en cas d'échec de l'envoi WhatsApp
     }
 
     // Étape 4: Retourner la réponse de succès

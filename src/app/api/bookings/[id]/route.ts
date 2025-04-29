@@ -12,9 +12,9 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  return handleGetBookingById(request, { params });
+  return handleGetBookingById(request, context);
 }
 
 /**
@@ -23,17 +23,17 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const path = request.nextUrl.pathname;
 
   // Route pour mettre à jour le statut
   if (path.endsWith("/status")) {
-    return handleUpdateBookingStatus(request, { params });
+    return handleUpdateBookingStatus(request, context);
   }
 
   // Route pour mettre à jour la réservation complète
-  return handleUpdateBooking(request, { params });
+  return handleUpdateBooking(request, context);
 }
 
 /**
@@ -42,9 +42,9 @@ export async function PUT(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  return handleUpdateBooking(request, { params });
+  return handleUpdateBooking(request, context);
 }
 
 /**
@@ -53,7 +53,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  return handleDeleteBooking(request, { params });
+  return handleDeleteBooking(request, context);
 }

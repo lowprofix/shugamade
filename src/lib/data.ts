@@ -262,7 +262,7 @@ export const promoServices: Service[] = [
   {
     id: 406,
     name: "Forfait Boost 4 séances",
-    price: "100 000 FCFA",
+    price: "80 000 FCFA",
     duration: "4 x 30 min",
     isPromo: true,
     color: "pink",
@@ -272,7 +272,7 @@ export const promoServices: Service[] = [
   {
     id: 407,
     name: "Forfait Boost 6 séances",
-    price: "150 000 FCFA",
+    price: "120 000 FCFA",
     duration: "6 x 30 min",
     isPromo: true,
     color: "teal",
@@ -323,8 +323,8 @@ export const promoPackages: PromoPackage[] = [
     name: "Forfait Boost",
     color: "pink",
     options: [
-      { name: "4 séances", price: "100 000 FCFA", sessions: 4 },
-      { name: "6 séances", price: "150 000 FCFA", sessions: 6 },
+      { name: "4 séances", price: "80 000 FCFA", sessions: 4 },
+      { name: "6 séances", price: "120 000 FCFA", sessions: 6 },
     ],
     benefits: [
       "Économisez jusqu'à 35% par rapport aux séances individuelles",

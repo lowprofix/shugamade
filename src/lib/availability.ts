@@ -21,6 +21,13 @@ export type AvailableSlot = {
   available: boolean;
 };
 
+export interface Slot {
+  id: string;
+  start: string;
+  end: string;
+  title: string;
+}
+
 // Constantes
 const OPEN_HOUR = 9; // 9h00
 const CLOSE_HOUR = 19; // 19h00
@@ -79,31 +86,54 @@ function normalizeDate(dateStr: string): Date | null {
 }
 
 /**
- * Génère les créneaux horaires pour une date donnée avec une durée spécifique
+ * Génère les créneaux horaires pour une journée donnée
+ * @param dateStr Date au format ISO
+ * @returns Liste des créneaux horaires disponibles
  */
-function generateSlots(date: Date, durationMinutes: number): TimeSlot[] {
-  // Vérifier si le jour est un jour d'ouverture
-  const dayOfWeek = date.getDay(); // 0 = Dimanche, 1 = Lundi, etc.
-  if (!OPEN_DAYS.includes(dayOfWeek)) {
-    return []; // Retourner un tableau vide si le jour n'est pas un jour d'ouverture
+export function generateTimeslots(dateStr: string): Slot[] {
+  console.log(`Génération des créneaux pour la date: ${dateStr}`);
+
+  try {
+    // Convertir en date UTC
+    const date = new Date(dateStr);
+
+    if (isNaN(date.getTime())) {
+      console.error(`Date invalide: ${dateStr}`);
+      return [];
+    }
+
+    console.log(`Date au format UTC: ${date.toISOString()}`);
+
+    // Utiliser la même date pour tous les créneaux
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const day = date.getUTCDate();
+
+    const timeslots: Slot[] = [];
+
+    // Heures d'ouverture: 8h à 20h
+    for (let hour = 8; hour < 20; hour++) {
+      // Ajouter un créneau par heure
+      const startTime = new Date(Date.UTC(year, month, day, hour, 0, 0));
+      const endTime = new Date(Date.UTC(year, month, day, hour + 1, 0, 0));
+
+      console.log(
+        `Créneau généré: ${startTime.toISOString()} - ${endTime.toISOString()}`
+      );
+
+      timeslots.push({
+        id: `slot-${startTime.toISOString()}`,
+        start: startTime.toISOString(),
+        end: endTime.toISOString(),
+        title: `${hour}:00 - ${hour + 1}:00`,
+      });
+    }
+
+    return timeslots;
+  } catch (error) {
+    console.error(`Erreur lors de la génération des créneaux: ${error}`);
+    return [];
   }
-
-  const slots: TimeSlot[] = [];
-  const startTime = new Date(date);
-  startTime.setHours(OPEN_HOUR, 0, 0, 0);
-  const endTime = new Date(date);
-  endTime.setHours(CLOSE_HOUR, 0, 0, 0);
-
-  // Générer des créneaux avec un pas de 15 minutes pour plus de flexibilité
-  const stepMinutes = 15;
-
-  while (startTime.getTime() + durationMinutes * 60000 <= endTime.getTime()) {
-    const slotEnd = new Date(startTime.getTime() + durationMinutes * 60000);
-    slots.push({ start: new Date(startTime), end: slotEnd });
-    startTime.setMinutes(startTime.getMinutes() + stepMinutes);
-  }
-
-  return slots;
 }
 
 /**
@@ -248,43 +278,40 @@ function roundToNextMinutesMultiple(
  * Vérifie si un créneau est disponible en le comparant aux réservations existantes
  */
 function isSlotAvailable(slot: TimeSlot, bookings: Booking[]): boolean {
-  // Obtenir les timestamps pour le début et la fin du créneau
-  const slotStart = slot.start.getTime();
-  const slotEnd = slot.end.getTime();
+  // Convertir les dates de créneau en UTC
+  const slotStartUtc = new Date(slot.start.toISOString());
+  const slotEndUtc = new Date(slot.end.toISOString());
 
   // Réduire la marge de sécurité à 0 pour être cohérent avec les autres fonctions
   const safetyMarginMs = 0; // 0 minute en millisecondes (était 60 * 1000 avant)
 
   // Vérifier si le créneau chevauche une réservation existante
   const isOverlapping = bookings.some((booking) => {
-    // Convertir les dates de réservation dans le même fuseau horaire
-    const bookingStart = normalizeDate(booking.start);
-    const bookingEnd = normalizeDate(booking.end);
+    // Convertir les chaînes de date en objets Date UTC
+    const bookingStartStr = booking.start;
+    const bookingEndStr = booking.end;
+
+    // Créer des dates UTC pour éliminer les problèmes de fuseau horaire
+    const bookingStartUtc = new Date(bookingStartStr);
+    const bookingEndUtc = new Date(bookingEndStr);
 
     // Si l'une des dates est invalide, ignorer cette réservation
-    if (!bookingStart || !bookingEnd) {
+    if (isNaN(bookingStartUtc.getTime()) || isNaN(bookingEndUtc.getTime())) {
       return false;
     }
 
-    // Vérifier le chevauchement avec une marge de sécurité
-    // Un créneau est indisponible si :
-    // - son début est avant la fin d'une réservation ET
-    // - sa fin est après le début d'une réservation
+    // Vérifier le chevauchement en utilisant les temps UTC
     const overlaps =
-      slotStart < bookingEnd.getTime() + safetyMarginMs &&
-      slotEnd > bookingStart.getTime() - safetyMarginMs;
+      slotStartUtc.getTime() < bookingEndUtc.getTime() + safetyMarginMs &&
+      slotEndUtc.getTime() > bookingStartUtc.getTime() - safetyMarginMs;
 
     if (overlaps) {
+      console.log("Chevauchement détecté:");
       console.log(
-        `Chevauchement détecté: ${format(slot.start, "HH:mm", {
-          timeZone: TIMEZONE,
-        })} - ${format(slot.end, "HH:mm", {
-          timeZone: TIMEZONE,
-        })} chevauche ${format(new Date(bookingStart.getTime()), "HH:mm", {
-          timeZone: TIMEZONE,
-        })} - ${format(new Date(bookingEnd.getTime()), "HH:mm", {
-          timeZone: TIMEZONE,
-        })}`
+        `- Créneau UTC: ${slotStartUtc.toISOString()} - ${slotEndUtc.toISOString()}`
+      );
+      console.log(
+        `- Réservation UTC: ${bookingStartUtc.toISOString()} - ${bookingEndUtc.toISOString()}`
       );
     }
 
@@ -463,48 +490,45 @@ export async function checkSlotAvailability(
 
     // Vérifier si le créneau chevauche une réservation existante
     const isOverlapping = bookings.some((booking) => {
-      const bookingStart = normalizeDate(booking.start);
-      const bookingEnd = normalizeDate(booking.end);
+      // Convertir les chaînes de date en objets Date UTC
+      const bookingStartStr = booking.start;
+      const bookingEndStr = booking.end;
+
+      // Créer des dates UTC pour éliminer les problèmes de fuseau horaire
+      const bookingStartUtc = new Date(bookingStartStr);
+      const bookingEndUtc = new Date(bookingEndStr);
+      const slotStartUtc = new Date(start.toISOString());
+      const slotEndUtc = new Date(end.toISOString());
 
       // Si l'une des dates est invalide, ignorer cette réservation
-      if (!bookingStart || !bookingEnd) {
+      if (isNaN(bookingStartUtc.getTime()) || isNaN(bookingEndUtc.getTime())) {
         return false;
       }
 
       // Réduire la marge de sécurité à 0 pour être cohérent avec generateOptimizedSlots
       const safetyMarginMs = 0; // 0 minute en millisecondes (était 60 * 1000 avant)
 
-      // Un chevauchement existe si le début du nouveau créneau est avant la fin d'une réservation
-      // ET la fin du nouveau créneau est après le début d'une réservation
-      // Utiliser la même logique que dans isSlotAvailable avec marge de sécurité
+      // Vérifier le chevauchement en utilisant les temps UTC
       const overlaps =
-        start.getTime() < bookingEnd.getTime() + safetyMarginMs &&
-        end.getTime() > bookingStart.getTime() - safetyMarginMs;
+        slotStartUtc.getTime() < bookingEndUtc.getTime() + safetyMarginMs &&
+        slotEndUtc.getTime() > bookingStartUtc.getTime() - safetyMarginMs;
 
       if (overlaps) {
         console.log(`Chevauchement détecté dans checkSlotAvailability:`);
         console.log(
-          `- Nouveau créneau: ${format(start, "yyyy-MM-dd HH:mm:ss", {
-            timeZone: TIMEZONE,
-          })} - ${format(end, "yyyy-MM-dd HH:mm:ss", { timeZone: TIMEZONE })}`
+          `- Nouveau créneau UTC: ${slotStartUtc.toISOString()} - ${slotEndUtc.toISOString()}`
         );
         console.log(
-          `- Réservation existante: ${format(
-            new Date(bookingStart.getTime()),
-            "yyyy-MM-dd HH:mm:ss",
-            { timeZone: TIMEZONE }
-          )} - ${format(new Date(bookingEnd.getTime()), "yyyy-MM-dd HH:mm:ss", {
-            timeZone: TIMEZONE,
-          })}`
+          `- Réservation existante UTC: ${bookingStartUtc.toISOString()} - ${bookingEndUtc.toISOString()}`
         );
         console.log(
           `- Condition 1: ${
-            start.getTime() < bookingEnd.getTime() + safetyMarginMs
+            slotStartUtc.getTime() < bookingEndUtc.getTime() + safetyMarginMs
           }`
         );
         console.log(
           `- Condition 2: ${
-            end.getTime() > bookingStart.getTime() - safetyMarginMs
+            slotEndUtc.getTime() > bookingStartUtc.getTime() - safetyMarginMs
           }`
         );
       }
@@ -625,12 +649,12 @@ export async function addBooking(
   try {
     console.log(`Tentative d'ajout de réservation: ${startStr} - ${endStr}`);
 
-    // Normaliser les dates
-    const start = normalizeDate(startStr);
-    const end = normalizeDate(endStr);
+    // Créer des dates UTC
+    const startUtc = new Date(startStr);
+    const endUtc = new Date(endStr);
 
     // Vérifier que les dates sont valides
-    if (!start || !end) {
+    if (isNaN(startUtc.getTime()) || isNaN(endUtc.getTime())) {
       console.error(`Dates invalides: start=${startStr}, end=${endStr}`);
       return {
         success: false,
@@ -639,13 +663,11 @@ export async function addBooking(
     }
 
     console.log(
-      `Dates normalisées: ${format(start, "yyyy-MM-dd HH:mm:ss", {
-        timeZone: TIMEZONE,
-      })} - ${format(end, "yyyy-MM-dd HH:mm:ss", { timeZone: TIMEZONE })}`
+      `Dates UTC: ${startUtc.toISOString()} - ${endUtc.toISOString()}`
     );
 
     // Vérifier la disponibilité du créneau
-    const isAvailable = await checkSlotAvailability(start, end);
+    const isAvailable = await checkSlotAvailability(startUtc, endUtc);
 
     if (!isAvailable.available) {
       console.warn(`Créneau non disponible: ${isAvailable.reason}`);
@@ -668,12 +690,16 @@ export async function addBooking(
 
     // Vérifier à nouveau s'il y a un chevauchement (double vérification)
     const hasOverlap = existingBookings.some((booking) => {
-      const bookingStart = normalizeDate(booking.start);
-      const bookingEnd = normalizeDate(booking.end);
+      // Convertir les chaînes de date en objets Date UTC
+      const bookingStartUtc = new Date(booking.start);
+      const bookingEndUtc = new Date(booking.end);
 
-      if (!bookingStart || !bookingEnd) return false;
+      if (isNaN(bookingStartUtc.getTime()) || isNaN(bookingEndUtc.getTime())) {
+        return false;
+      }
 
-      return start < bookingEnd && end > bookingStart;
+      // Vérifier le chevauchement en utilisant les temps UTC
+      return startUtc < bookingEndUtc && endUtc > bookingStartUtc;
     });
 
     if (hasOverlap) {

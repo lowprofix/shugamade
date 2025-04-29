@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les URLs des webhooks depuis les variables d'environnement
     const createEventUrl = process.env.N8N_WEBHOOK_CREATE_EVENT;
-    const testEventUrl = process.env.N8N_WEBHOOK_TEST_EVENT;
     const baseWebhookUrl = process.env.N8N_WEBHOOK_BASE;
 
     // Vérifier que les variables d'environnement essentielles sont définies
@@ -104,10 +103,10 @@ export async function POST(request: NextRequest) {
       error = err;
 
       // Essayer avec l'URL alternative si elle est définie
-      if (testEventUrl) {
+      if (createEventUrl) {
         try {
           console.log("Tentative avec l'URL alternative...");
-          response = await fetch(testEventUrl, {
+          response = await fetch(createEventUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

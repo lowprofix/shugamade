@@ -10,8 +10,8 @@ export const revalidate = 0;
 export const maxDuration = 60; // 60 secondes max
 
 /**
- * Route GET pour envoyer les rappels (étape 2)
- * Cette fonction envoie les rappels stockés dans la base de données Prisma
+ * Route GET pour réessayer les rappels échoués
+ * Cette fonction récupère les rappels avec le statut "failed" et tente de les envoyer à nouveau
  */
 export async function GET(request: NextRequest) {
   try {
@@ -40,35 +40,39 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer les rappels en attente depuis la base de données
-    const pendingReminders = await prisma.reminder.findMany({
+    // Récupérer les rappels avec le statut "failed"
+    const failedReminders = await prisma.reminder.findMany({
       where: {
-        status: "pending",
+        status: "failed",
+        // Limiter aux rappels créés dans les dernières 24 heures
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        },
       },
-      take: 5, // Limiter à 5 rappels par appel pour respecter les limites de temps
+      take: 5, // Limiter à 5 rappels par appel
     });
 
-    if (!pendingReminders || pendingReminders.length === 0) {
-      console.log("Aucun rappel en attente trouvé");
+    if (!failedReminders || failedReminders.length === 0) {
+      console.log("Aucun rappel échoué trouvé pour une nouvelle tentative");
       return NextResponse.json({
         success: true,
-        message: "Aucun rappel en attente trouvé",
+        message: "Aucun rappel échoué trouvé pour une nouvelle tentative",
         results: [],
       });
     }
 
     console.log(
-      `Envoi des rappels pour ${pendingReminders.length} rendez-vous...`
+      `Nouvelle tentative pour ${failedReminders.length} rappels échoués...`
     );
 
     // Tableau pour stocker les résultats d'envoi
-    const reminderResults = [];
+    const retryResults = [];
 
-    // Traiter chaque rappel
-    for (const reminder of pendingReminders) {
+    // Traiter chaque rappel échoué
+    for (const reminder of failedReminders) {
       try {
         console.log(
-          `Traitement du rappel pour ${reminder.clientName || "client"} (${
+          `Nouvelle tentative pour ${reminder.clientName || "client"} (${
             reminder.phoneNumber
           })`
         );
@@ -80,10 +84,11 @@ export async function GET(request: NextRequest) {
           reminder.clientName || ""
         );
 
-        // Envoyer le rappel avec fallback entre WhatsApp et SMS
+        // Tenter d'envoyer le rappel à nouveau
         const messageStatus = await sendReminderWithFallback(
           reminder.phoneNumber,
-          reminderMessage
+          reminderMessage,
+          3 // Augmenter le nombre maximum de tentatives pour les réessais
         );
 
         // Mettre à jour le statut du rappel dans la base de données
@@ -98,72 +103,77 @@ export async function GET(request: NextRequest) {
         });
 
         // Ajouter le résultat au tableau des résultats
-        reminderResults.push({
+        retryResults.push({
+          id: reminder.id,
           bookingId: reminder.bookingId,
-          time: reminder.start.toISOString(),
-          sent: messageStatus.sent,
-          service: reminder.service,
-          phoneNumber: reminder.phoneNumber,
           clientName: reminder.clientName,
-          contactMethod: messageStatus.method,
+          phoneNumber: reminder.phoneNumber,
+          date: reminder.date,
+          sent: messageStatus.sent,
+          method: messageStatus.method,
         });
 
         // Log du résultat
         console.log(
-          `Rappel ${messageStatus.sent ? "envoyé" : "échoué"} pour ${
+          `Réessai ${messageStatus.sent ? "réussi" : "échoué"} pour ${
             reminder.clientName || "client"
           } via ${messageStatus.method}`
         );
       } catch (error) {
         console.error(
-          `Erreur lors de l'envoi du rappel ${reminder.id}:`,
+          `Erreur lors de la nouvelle tentative pour le rappel ${reminder.id}:`,
           error
         );
 
-        // Marquer comme échoué dans la base de données
+        // Mettre à jour le statut du rappel dans la base de données
         await prisma.reminder.update({
           where: { id: reminder.id },
           data: {
             status: "failed",
             errorMessage:
-              error instanceof Error ? error.message : "Erreur inconnue",
+              error instanceof Error
+                ? error.message
+                : "Erreur inconnue lors du réessai",
           },
         });
 
         // Ajouter le résultat au tableau des résultats
-        reminderResults.push({
+        retryResults.push({
+          id: reminder.id,
           bookingId: reminder.bookingId,
-          time: reminder.start.toISOString(),
-          sent: false,
-          service: reminder.service,
-          phoneNumber: reminder.phoneNumber,
           clientName: reminder.clientName,
-          contactMethod: "none",
+          phoneNumber: reminder.phoneNumber,
+          date: reminder.date,
+          sent: false,
+          method: "none",
         });
       }
     }
 
-    // Compter les rappels restants
-    const remainingReminders = await prisma.reminder.count({
+    // Compter les rappels encore en échec
+    const remainingFailedReminders = await prisma.reminder.count({
       where: {
-        status: "pending",
+        status: "failed",
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        },
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: `Rappels envoyés pour ${
-        reminderResults.filter((r) => r.sent).length
-      }/${pendingReminders.length} rendez-vous`,
-      results: reminderResults,
-      remainingReminders: remainingReminders,
+      message: `Réessai effectué pour ${
+        retryResults.filter((r) => r.sent).length
+      }/${failedReminders.length} rappels échoués`,
+      results: retryResults,
+      remainingFailedReminders: remainingFailedReminders,
     });
   } catch (error) {
-    console.error("Erreur lors de l'envoi des rappels:", error);
+    console.error("Erreur lors du réessai des rappels:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Échec de l'envoi des rappels",
+        error: "Échec du réessai des rappels",
         message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }

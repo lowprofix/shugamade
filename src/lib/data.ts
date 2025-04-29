@@ -2,6 +2,13 @@
  * Types pour l'application ShugaMade
  */
 
+export interface Location {
+  id: number;
+  name: string;
+  address: string;
+  description: string;
+}
+
 export interface Service {
   id: number;
   name: string;
@@ -43,6 +50,25 @@ export interface Product {
   stock?: number; // Quantité en stock
   isAvailable?: boolean; // Pour indiquer si le produit est disponible
 }
+
+/**
+ * Données pour les lieux
+ */
+export const locations: Location[] = [
+  {
+    id: 1,
+    name: "Institut ShugaMade - BZV",
+    address: "119 Rue Bangalas, Poto-Poto, Brazzaville, Congo",
+    description: "2eme ruelle après la station Afrique de l'avenue de France",
+  },
+  {
+    id: 2,
+    name: "Institut ShugaMade - PNR",
+    address: "Mpita, Pointe-Noire, Congo",
+    description:
+      "2eme ruelle après TATIE LOUTTAR, la ruelle en face de l'école bénédiction",
+  },
+];
 
 /**
  * Données pour les services proposés
@@ -179,7 +205,7 @@ export const services: Service[] = [
 export const promoServices: Service[] = [
   {
     id: 401,
-    name: "Promo 4 séances - Tempes",
+    name: "Forfait 4 séances - Tempes",
     price: "135 000 FCFA",
     duration: "4 x 45 min",
     isPromo: true,
@@ -193,7 +219,7 @@ export const promoServices: Service[] = [
   },
   {
     id: 402,
-    name: "Promo 4 séances - Tête entière",
+    name: "Forfait 4 séances - Tête entière",
     price: "175 000 FCFA",
     duration: "4 x 60 min",
     isPromo: true,
@@ -207,7 +233,7 @@ export const promoServices: Service[] = [
   },
   {
     id: 404,
-    name: "Promo 6 séances - Tempes",
+    name: "Forfait 6 séances - Tempes",
     price: "190 000 FCFA",
     duration: "6 x 45 min",
     isPromo: true,
@@ -221,7 +247,7 @@ export const promoServices: Service[] = [
   },
   {
     id: 405,
-    name: "Promo 6 séances - Tête entière",
+    name: "Forfait 6 séances - Tête entière",
     price: "250 000 FCFA",
     duration: "6 x 60 min",
     isPromo: true,
@@ -233,6 +259,26 @@ export const promoServices: Service[] = [
     ],
     durationMinutes: 60,
   },
+  {
+    id: 406,
+    name: "Forfait Boost 4 séances",
+    price: "100 000 FCFA",
+    duration: "4 x 30 min",
+    isPromo: true,
+    color: "pink",
+    includes: ["Massage crânien", "Luminothérapie", "Électrothérapie"],
+    durationMinutes: 30,
+  },
+  {
+    id: 407,
+    name: "Forfait Boost 6 séances",
+    price: "150 000 FCFA",
+    duration: "6 x 30 min",
+    isPromo: true,
+    color: "teal",
+    includes: ["Massage crânien", "Luminothérapie", "Électrothérapie"],
+    durationMinutes: 30,
+  },
 ];
 
 /**
@@ -241,7 +287,7 @@ export const promoServices: Service[] = [
 export const promoPackages: PromoPackage[] = [
   {
     id: 101,
-    name: "Promo 4 séances",
+    name: "Forfait 4 séances",
     isRecommended: true,
     color: "pink",
     options: [
@@ -258,11 +304,27 @@ export const promoPackages: PromoPackage[] = [
   },
   {
     id: 102,
-    name: "Promo 6 séances",
+    name: "Forfait 6 séances",
     color: "teal",
     options: [
       { name: "Tempes", price: "190 000 FCFA", sessions: 6 },
       { name: "Tête entière", price: "250 000 FCFA", sessions: 6 },
+    ],
+    benefits: [
+      "Économisez jusqu'à 35% par rapport aux séances individuelles",
+      "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
+      "Diagnostic capillaire offert (valeur 10 000 FCFA)",
+      "Résultats optimaux avec un traitement intensif",
+      "Suivi personnalisé tout au long du traitement",
+    ],
+  },
+  {
+    id: 103,
+    name: "Forfait Boost",
+    color: "pink",
+    options: [
+      { name: "4 séances", price: "100 000 FCFA", sessions: 4 },
+      { name: "6 séances", price: "150 000 FCFA", sessions: 6 },
     ],
     benefits: [
       "Économisez jusqu'à 35% par rapport aux séances individuelles",
@@ -345,6 +407,18 @@ export const products: Product[] = [
       "Appareil de micro-needling pour stimuler la repousse capillaire.",
     price: "5 000 FCFA",
     image: "/images/products/dermaroller.PNG",
+    category: "accessories",
+    stock: 2,
+    isAvailable: true,
+  },
+  {
+    id: 39,
+    hiboutikId: 39,
+    name: "Dermaroller 1mm",
+    description:
+      "Appareil de micro-needling pour stimuler la repousse capillaire.",
+    price: "5 000 FCFA",
+    image: "/images/products/dermaroller_black.PNG",
     category: "accessories",
     stock: 2,
     isAvailable: true,

@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Service as ServiceType } from "@/lib/data";
+import { Service as ServiceType, Location, locations } from "@/lib/data";
 import { Suspense, useTransition } from "react";
 import ServiceSelection from "./ServiceSelection";
+import LocationSelection from "./LocationSelection";
 import DateTimeSelection from "./DateTimeSelection";
 import CustomerInfoForm from "./CustomerInfoForm";
 import BookingConfirmation from "./BookingConfirmation";
 import ServicesSkeleton from "@/components/skeletons/ServicesSkeleton";
 import CalendarSkeleton from "@/components/skeletons/CalendarSkeleton";
 import CustomerFormSkeleton from "@/components/skeletons/CustomerFormSkeleton";
-import BookingStepIndicator from "./BookingStepIndicator";
+import { BookingStepIndicator } from "./BookingStepIndicator";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { format } from "date-fns";
@@ -58,6 +59,9 @@ export default function BookingClientWrapper({
   // États pour gérer le processus de réservation
   const [bookingStep, setBookingStep] = useState(1);
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
+    null
+  );
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<AvailableSlot[]>([]);
   const [isMultipleBooking, setIsMultipleBooking] = useState(false);
@@ -111,8 +115,9 @@ export default function BookingClientWrapper({
       const isPromoPackService =
         services.length === 1 &&
         services[0].isPromo &&
-        (services[0].name.includes("Promo 4 séances") ||
-          services[0].name.includes("Promo 6 séances"));
+        (services[0].name.includes("Forfait 4 séances") ||
+          services[0].name.includes("Forfait 6 séances") ||
+          services[0].name.includes("Forfait Boost"));
 
       // S'assurer que isPromoPackService est toujours un booléen
       setIsMultipleBooking(isPromoPackService === true);
@@ -121,12 +126,27 @@ export default function BookingClientWrapper({
       setSelectedSlots([]);
       setSelectedSlot(null);
       setMultipleBooking(null);
+      setSelectedLocation(null);
 
       startTransition(() => {
-        setBookingStep(2);
+        setBookingStep(2); // Aller à l'étape de sélection du lieu
         setFadeOut(false);
       });
     }, 300); // Délai correspondant à la durée de l'animation CSS
+  };
+
+  // Fonction pour sélectionner un lieu
+  const selectLocation = (location: Location) => {
+    setFadeOut(true);
+
+    // Délai pour l'animation de transition
+    setTimeout(() => {
+      setSelectedLocation(location);
+      startTransition(() => {
+        setBookingStep(3); // Aller à l'étape de sélection date/heure
+        setFadeOut(false);
+      });
+    }, 300);
   };
 
   // Fonction pour sélectionner un créneau
@@ -139,7 +159,7 @@ export default function BookingClientWrapper({
       setTimeout(() => {
         setSelectedSlot(slot);
         startTransition(() => {
-          setBookingStep(3);
+          setBookingStep(4); // Étape 4 maintenant (était 3 avant)
           setFadeOut(false);
         });
       }, 300);
@@ -180,7 +200,7 @@ export default function BookingClientWrapper({
       });
 
       startTransition(() => {
-        setBookingStep(3);
+        setBookingStep(4); // Étape 4 maintenant (était 3 avant)
         setFadeOut(false);
       });
     }, 300);
@@ -228,6 +248,7 @@ export default function BookingClientWrapper({
       startTransition(() => {
         setBookingStep(1);
         setSelectedServices([]);
+        setSelectedLocation(null);
         setSelectedSlot(null);
         setSelectedSlots([]);
         setMultipleBooking(null);
@@ -309,6 +330,7 @@ export default function BookingClientWrapper({
         selectedServices: selectedServices,
         totalDuration: calculateTotalDuration(),
         isCustomService: selectedServices.length > 1,
+        locationId: selectedLocation?.id || 1, // Utiliser l'ID du lieu sélectionné ou 1 (BZV) par défaut
       };
 
       // 3. Créer la réservation avec un timeout
@@ -328,6 +350,7 @@ export default function BookingClientWrapper({
             clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
             clientEmail: customerInfo.email || null,
             hiboutikClientId: customerInfoWithHiboutik.hiboutikClientId,
+            locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
 
             // Informations sur le pack
             packageName: generateCombinedServiceName(),
@@ -339,6 +362,7 @@ export default function BookingClientWrapper({
               start: `${slot.date}T${slot.start}:00+01:00`,
               end: `${slot.date}T${slot.end}:00+01:00`,
               description: `${multipleBooking.serviceType} - Séance ${multipleBooking.sessionCount} séances`,
+              locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu pour chaque créneau
             })),
           };
 
@@ -403,6 +427,7 @@ export default function BookingClientWrapper({
             clientName: customerInfo.name,
             clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
             clientEmail: customerInfo.email || null,
+            locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
           });
 
           const response = await fetch("/api/create-booking", {
@@ -417,6 +442,7 @@ export default function BookingClientWrapper({
               clientName: customerInfo.name,
               clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
               clientEmail: customerInfo.email || null,
+              locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
             }),
             signal: controller.signal,
           });
@@ -453,7 +479,7 @@ export default function BookingClientWrapper({
         setBookingError(null);
 
         startTransition(() => {
-          setBookingStep(4);
+          setBookingStep(5); // Étape 5 maintenant (était 4 avant)
           setFadeOut(false);
         });
       } catch (error: any) {
@@ -498,11 +524,12 @@ export default function BookingClientWrapper({
   };
 
   // Définir les étapes pour le BookingStepIndicator
-  const bookingSteps: Step[] = [
+  const bookingSteps = [
     { id: 1, label: "Service", icon: "service" },
-    { id: 2, label: "Date & Heure", icon: "calendar" },
-    { id: 3, label: "Informations", icon: "user" },
-    { id: 4, label: "Confirmation", icon: "check" },
+    { id: 2, label: "Institut", icon: "location" },
+    { id: 3, label: "Date & Heure", icon: "calendar" },
+    { id: 4, label: "Informations", icon: "user" },
+    { id: 5, label: "Confirmation", icon: "check" },
   ];
 
   return (
@@ -529,26 +556,39 @@ export default function BookingClientWrapper({
           )}
 
           {bookingStep === 2 && selectedServices.length > 0 && (
-            <Suspense fallback={<CalendarSkeleton />}>
-              <DateTimeSelection
-                services={selectedServices}
-                combinedDuration={calculateTotalDuration()}
-                onSelectSlot={selectSlot}
-                onBack={goBack}
-                isMultipleBooking={isMultipleBooking}
-                selectedSlots={selectedSlots}
-                addMultipleSlot={addMultipleSlot}
-                removeMultipleSlot={removeMultipleSlot}
-                confirmMultipleSlots={confirmMultipleSlots}
-              />
-            </Suspense>
+            <LocationSelection
+              locations={locations}
+              onSelectLocation={selectLocation}
+              onBack={goBack}
+              isMultipleBooking={isMultipleBooking}
+            />
           )}
 
           {bookingStep === 3 &&
+            selectedServices.length > 0 &&
+            selectedLocation && (
+              <Suspense fallback={<CalendarSkeleton />}>
+                <DateTimeSelection
+                  services={selectedServices}
+                  combinedDuration={calculateTotalDuration()}
+                  onSelectSlot={selectSlot}
+                  onBack={goBack}
+                  isMultipleBooking={isMultipleBooking}
+                  selectedSlots={selectedSlots}
+                  addMultipleSlot={addMultipleSlot}
+                  removeMultipleSlot={removeMultipleSlot}
+                  confirmMultipleSlots={confirmMultipleSlots}
+                  selectedLocation={selectedLocation}
+                />
+              </Suspense>
+            )}
+
+          {bookingStep === 4 &&
             ((selectedSlot && !isMultipleBooking) ||
               (isMultipleBooking &&
                 multipleBooking &&
-                multipleBooking.slots.length > 0)) && (
+                multipleBooking.slots.length > 0)) &&
+            selectedLocation && (
               <Suspense fallback={<CustomerFormSkeleton />}>
                 <CustomerInfoForm
                   customerInfo={customerInfo}
@@ -559,17 +599,19 @@ export default function BookingClientWrapper({
                   slot={selectedSlot}
                   isMultipleBooking={isMultipleBooking}
                   multipleBooking={multipleBooking}
+                  selectedLocation={selectedLocation}
                 />
               </Suspense>
             )}
 
-          {bookingStep === 4 && bookingConfirmed && (
+          {bookingStep === 5 && bookingConfirmed && selectedLocation && (
             <BookingConfirmation
               services={selectedServices}
               slot={selectedSlot}
               customerInfo={customerInfo}
               isMultipleBooking={isMultipleBooking}
               multipleBooking={multipleBooking}
+              selectedLocation={selectedLocation}
             />
           )}
 

@@ -1,3 +1,6 @@
+/**
+ * Utilitaires pour le système de rappel
+ */
 import { format } from "date-fns-tz";
 
 // Constantes
@@ -12,7 +15,7 @@ export type MessageStatus = {
   error?: string;
 };
 
-// Optimisation 1: Tableau ordonné pour l'extraction de service, basé sur les services réels de data.ts
+// Tableau ordonné pour l'extraction de service
 const SERVICE_PATTERNS = [
   // Patterns spécifiques en premier (des plus spécifiques aux plus généraux)
   {
@@ -45,7 +48,7 @@ const SERVICE_PATTERNS = [
   },
 ];
 
-// Optimisation 5: Template statique pour les messages de rappel
+// Template pour les messages de rappel
 const REMINDER_TEMPLATE = {
   header:
     "Bonsoir {{clientName}},\nNous vous rappelons votre rendez-vous du {{date}} à {{time}} pour votre séance de {{service}} à l'institut SHUGAMADE.",
@@ -99,8 +102,6 @@ const SERVICE_PREPARATIONS = new Map([
 
 /**
  * Extrait le type de service à partir du titre de la réservation
- * @param title Titre de la réservation
- * @returns Type de service identifié ou "soins" par défaut
  */
 export function extractServiceFromTitle(title: string = ""): string {
   // Normalisation du titre (minuscules, sans accents)
@@ -156,7 +157,7 @@ export function buildReminderMessage(
 
   // Obtenir les instructions de préparation spécifiques au service
   const preparationInstructions =
-    SERVICE_PREPARATIONS.get(serviceName) ||
+    SERVICE_PREPARATIONS.get(serviceName.toLowerCase()) ||
     SERVICE_PREPARATIONS.get("default") ||
     "";
 
@@ -184,8 +185,6 @@ export function buildReminderMessage(
 
 /**
  * Extrait le numéro de téléphone depuis la description de la réservation
- * @param description Description de l'événement
- * @returns Numéro de téléphone au format international ou null si non trouvé
  */
 export function extractPhoneNumberFromDescription(
   description: string = ""
@@ -225,7 +224,7 @@ export function extractPhoneNumberFromDescription(
 }
 
 /**
- * Fonction optimisée pour extraire le nom du client
+ * Extrait le nom du client du titre
  */
 export function extractClientName(title: string = ""): string {
   if (!title) return "";
@@ -394,7 +393,7 @@ export async function sendReminderWithFallback(
     console.log(
       `Tentative WhatsApp ${retries}/${maxRetries} échouée, attente avant nouvelle tentative...`
     );
-    
+
     // Attendre 1 seconde entre les tentatives
     if (retries < maxRetries) {
       await new Promise((resolve) => setTimeout(resolve, 1000));

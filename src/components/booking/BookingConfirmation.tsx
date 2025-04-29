@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Service as ServiceType } from "@/lib/data";
+import { Service as ServiceType, Location } from "@/lib/data";
 import {
   AvailableSlot,
   CustomerInfo,
@@ -32,6 +32,7 @@ interface BookingConfirmationProps {
   customerInfo: CustomerInfo;
   isMultipleBooking: boolean;
   multipleBooking: MultipleBooking | null;
+  selectedLocation: Location;
 }
 
 export default function BookingConfirmation({
@@ -40,6 +41,7 @@ export default function BookingConfirmation({
   customerInfo,
   isMultipleBooking,
   multipleBooking,
+  selectedLocation,
 }: BookingConfirmationProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const bookingCardRef = useRef<HTMLDivElement>(null);
@@ -683,6 +685,37 @@ export default function BookingConfirmation({
             <span className="text-[#ffb2dd]">{bookingNumber}</span> lors de
             votre paiement.
           </p>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <h3 className="text-xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200">
+          Détails de votre réservation
+        </h3>
+        <div className="space-y-4">
+          <div className="flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-3">
+            <span className="text-gray-600 dark:text-gray-400">Service:</span>
+            <span className="font-medium text-gray-800 dark:text-gray-200 text-right max-w-[70%]">
+              {services.map((s) => s.name).join(", ")}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-3">
+            <span className="text-gray-600 dark:text-gray-400">Institut:</span>
+            <span className="font-medium text-gray-800 dark:text-gray-200 text-right">
+              {selectedLocation.name}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-3">
+            <span className="text-gray-600 dark:text-gray-400">Adresse:</span>
+            <span className="font-medium text-gray-800 dark:text-gray-200 text-right max-w-[70%]">
+              {selectedLocation.address}
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {selectedLocation.description}
+              </div>
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Service as ServiceType } from "@/lib/data";
+import { Service as ServiceType, Location } from "@/lib/data";
 import {
   AvailableSlot,
   CustomerInfo,
@@ -37,6 +37,7 @@ interface CustomerInfoFormProps {
   slot: AvailableSlot | null;
   isMultipleBooking: boolean;
   multipleBooking: MultipleBooking | null;
+  selectedLocation: Location;
 }
 
 // Liste des indicatifs téléphoniques courants
@@ -62,6 +63,7 @@ export default function CustomerInfoForm({
   slot,
   isMultipleBooking,
   multipleBooking,
+  selectedLocation,
 }: CustomerInfoFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -565,6 +567,53 @@ export default function CustomerInfoForm({
                   </div>
                 )}
               </div>
+
+              {/* Récapitulatif de la réservation */}
+              <Card className="mb-6">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                    Récapitulatif de votre réservation
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Service:
+                      </span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200 text-right">
+                        {services.map((s) => s.name).join(", ")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Lieu:
+                      </span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200 text-right">
+                        {selectedLocation.name}
+                      </span>
+                    </div>
+                    {!isMultipleBooking && slot && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Date:
+                          </span>
+                          <span className="font-medium text-gray-800 dark:text-gray-200 text-right">
+                            {formatDateString(slot.date)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Heure:
+                          </span>
+                          <span className="font-medium text-gray-800 dark:text-gray-200 text-right">
+                            {slot.start} - {slot.end}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
         </div>

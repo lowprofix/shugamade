@@ -1,102 +1,195 @@
 "use client";
 
-import { Check, Calendar, User, ShoppingBag } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  BadgeCheck,
+  Clock3,
+  MailQuestion,
+  ShoppingBag,
+  MapPin,
+  Calendar,
+  User,
+} from "lucide-react";
+import { Progress } from "../ui/progress";
 
-interface Step {
-  id: number;
-  label: string;
-  icon: string;
-}
-
-interface BookingStepIndicatorProps {
-  steps: Step[];
+export interface BookingStepIndicatorProps {
   currentStep: number;
+  steps: {
+    id: string | number;
+    title?: string;
+    label?: string;
+    icon?:
+      | "check"
+      | "clock"
+      | "mail"
+      | "service"
+      | "location"
+      | "calendar"
+      | "user"
+      | string;
+  }[];
   isPending?: boolean;
 }
 
-export default function BookingStepIndicator({
-  steps,
+export function BookingStepIndicator({
   currentStep,
+  steps,
   isPending = false,
 }: BookingStepIndicatorProps) {
-  // Fonction pour obtenir l'icône appropriée
-  const getIcon = (
-    iconName: string,
-    isActive: boolean,
-    isCompleted: boolean
-  ) => {
-    const className = cn(
-      "w-5 h-5",
-      isCompleted ? "text-white" : isActive ? "text-[#ffb2dd]" : "text-gray-400"
-    );
+  const STEP_ICONS = {
+    check: BadgeCheck,
+    clock: Clock3,
+    mail: MailQuestion,
+    service: ShoppingBag,
+    location: MapPin,
+    calendar: Calendar,
+    user: User,
+  };
 
-    switch (iconName) {
-      case "service":
-        return <ShoppingBag className={className} />;
-      case "calendar":
-        return <Calendar className={className} />;
-      case "user":
-        return <User className={className} />;
-      case "check":
-        return <Check className={className} />;
-      default:
-        return <Check className={className} />;
+  const getProgressPercentage = () => {
+    return ((currentStep - 1) / (steps.length - 1)) * 100;
+  };
+
+  const getStepStatus = (stepIndex: number) => {
+    if (stepIndex + 1 < currentStep) {
+      return "completed";
+    }
+    if (stepIndex + 1 === currentStep) {
+      return "current";
+    }
+    return "upcoming";
+  };
+
+  const getStepColorClass = (status: "completed" | "current" | "upcoming") => {
+    switch (status) {
+      case "completed":
+        return "bg-gradient-to-r from-[#ffb2dd] to-[#e2b3f7] text-white border-[#e2b3f7]";
+      case "current":
+        return "bg-white text-[#e2b3f7] border-[#e2b3f7]";
+      case "upcoming":
+        return "bg-gray-100 text-gray-400 border-gray-300";
+    }
+  };
+
+  const getIconColorClass = (status: "completed" | "current" | "upcoming") => {
+    switch (status) {
+      case "completed":
+        return "text-white";
+      case "current":
+        return "text-[#e2b3f7]";
+      case "upcoming":
+        return "text-gray-400";
+    }
+  };
+
+  const getLineColorClass = (status: "completed" | "current" | "upcoming") => {
+    switch (status) {
+      case "completed":
+        return "border-[#e2b3f7]";
+      case "current":
+      case "upcoming":
+        return "border-gray-300";
     }
   };
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center">
+      {/* Progress bar */}
+      <div className="w-full mb-6">
+        <Progress
+          value={getProgressPercentage()}
+          className="h-2 bg-gray-100"
+          style={
+            {
+              "--progress-background":
+                "linear-gradient(to right, #ffb2dd, #e2b3f7, #9deaff)",
+            } as React.CSSProperties
+          }
+        />
+      </div>
+
+      {/* Custom style for progress bar gradient */}
+      <style jsx global>{`
+        [data-slot="progress-indicator"] {
+          background: linear-gradient(
+            to right,
+            #ffb2dd,
+            #e2b3f7,
+            #bfe0fb,
+            #9deaff
+          ) !important;
+          background-size: 200% 100% !important;
+          animation: shimmer 2s infinite linear !important;
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: 100% 0;
+          }
+          100% {
+            background-position: 0 0;
+          }
+        }
+      `}</style>
+
+      {/* Step indicators */}
+      <div className="flex justify-between w-full">
         {steps.map((step, index) => {
-          const isActive = currentStep === step.id;
-          const isCompleted = currentStep > step.id;
+          const status = getStepStatus(index);
+          const stepTitle = step.title || step.label || `Étape ${index + 1}`;
+          const iconName =
+            typeof step.icon === "string" ? step.icon : undefined;
+          const StepIcon = iconName && (STEP_ICONS as any)[iconName];
 
           return (
-            <div key={step.id} className="flex flex-col items-center relative">
-              {/* Ligne de connexion */}
+            <div
+              key={String(step.id)}
+              className="flex flex-col items-center relative"
+            >
+              {/* Connecting line */}
               {index < steps.length - 1 && (
-                <div className="absolute top-4 left-1/2 w-full h-0.5 bg-gray-200 z-0">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#ffb2dd] to-[#e2b3f7] transition-all duration-500"
-                    style={{
-                      width: isCompleted
-                        ? "100%"
-                        : isPending && isActive
-                        ? "50%"
-                        : "0%",
-                    }}
-                  />
-                </div>
+                <div
+                  className={`absolute top-4 left-[2rem] w-full h-0 border-t-2 ${getLineColorClass(
+                    status
+                  )}`}
+                />
               )}
 
-              {/* Cercle d'étape */}
+              {/* Step circle with animation for current step */}
               <div
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all duration-300",
-                  isCompleted
-                    ? "bg-gradient-to-r from-[#ffb2dd] to-[#e2b3f7]"
-                    : isActive
-                    ? "bg-white border-2 border-[#ffb2dd]"
-                    : "bg-white border-2 border-gray-200"
-                )}
+                className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 ${getStepColorClass(
+                  status
+                )} ${
+                  status === "current"
+                    ? "animate-pulse shadow-md shadow-[#ffb2dd]/30"
+                    : ""
+                }`}
               >
-                {getIcon(step.icon, isActive, isCompleted)}
+                {StepIcon && (
+                  <StepIcon
+                    className={`w-4 h-4 ${getIconColorClass(
+                      status
+                    )} transition-all duration-300`}
+                  />
+                )}
+                {!StepIcon && (
+                  <span className="text-sm font-medium">{index + 1}</span>
+                )}
               </div>
 
-              {/* Étiquette */}
-              <span
-                className={cn(
-                  "mt-2 text-xs font-medium transition-colors duration-300",
-                  isActive
-                    ? "text-[#ffb2dd]"
-                    : isCompleted
-                    ? "text-[#e2b3f7]"
-                    : "text-gray-400"
-                )}
-              >
-                {step.label}
-              </span>
+              {/* Step title */}
+              <div className="mt-2 text-center">
+                <span
+                  className={`text-xs font-medium transition-all duration-300 ${
+                    status === "current"
+                      ? "text-[#e2b3f7]"
+                      : status === "completed"
+                      ? "text-[#ffb2dd]"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {stepTitle}
+                </span>
+              </div>
             </div>
           );
         })}

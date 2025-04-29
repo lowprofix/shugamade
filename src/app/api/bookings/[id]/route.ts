@@ -12,9 +12,10 @@ import {
  */
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return handleGetBookingById(request, context);
+  const { id } = await params;
+  return handleGetBookingById(request, { params: { id } });
 }
 
 /**
@@ -23,17 +24,18 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const path = request.nextUrl.pathname;
 
   // Route pour mettre à jour le statut
   if (path.endsWith("/status")) {
-    return handleUpdateBookingStatus(request, context);
+    return handleUpdateBookingStatus(request, { params: { id } });
   }
 
   // Route pour mettre à jour la réservation complète
-  return handleUpdateBooking(request, context);
+  return handleUpdateBooking(request, { params: { id } });
 }
 
 /**
@@ -42,9 +44,10 @@ export async function PUT(
  */
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return handleUpdateBooking(request, context);
+  const { id } = await params;
+  return handleUpdateBooking(request, { params: { id } });
 }
 
 /**
@@ -53,7 +56,8 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return handleDeleteBooking(request, context);
+  const { id } = await params;
+  return handleDeleteBooking(request, { params: { id } });
 }

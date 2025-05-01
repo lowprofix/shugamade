@@ -78,7 +78,7 @@ export const services: Service[] = [
     id: 1,
     name: "Diagnostic simple",
     price: "10 000 FCFA",
-    duration: "30 min",
+    duration: "60 min",
     description:
       "Évaluation complète de votre cuir chevelu et diagnostic personnalisé pour déterminer le traitement adapté.",
     color: "brand",
@@ -87,13 +87,13 @@ export const services: Service[] = [
       "Évaluation de la densité capillaire",
       "Recommandations personnalisées",
     ],
-    durationMinutes: 30,
+    durationMinutes: 60,
   },
   {
     id: 11,
-    name: "Diagnostic complet avec compte-rendu",
+    name: "Diagnostic complet avec protocole",
     price: "15 000 FCFA",
-    duration: "45 min",
+    duration: "60 min",
     description:
       "Évaluation approfondie de votre cuir chevelu avec analyse détaillée et rapport écrit personnalisé.",
     color: "brand",
@@ -103,7 +103,7 @@ export const services: Service[] = [
       "Rapport écrit personnalisé",
       "Plan de traitement sur mesure",
     ],
-    durationMinutes: 45,
+    durationMinutes: 60,
   },
   {
     id: 14,
@@ -122,53 +122,8 @@ export const services: Service[] = [
     durationMinutes: 30,
   },
   {
-    id: 10,
-    name: "Massage crânien",
-    price: "5 000 FCFA",
-    duration: "10 min",
-    description:
-      "Massage relaxant du cuir chevelu pour stimuler la circulation sanguine et favoriser la santé capillaire.",
-    color: "brand",
-    includes: [
-      "Massage du cuir chevelu",
-      "Techniques de relaxation",
-      "Application d'huiles essentielles",
-    ],
-    durationMinutes: 10,
-  },
-  {
-    id: 12,
-    name: "Électrothérapie",
-    price: "10 000 FCFA",
-    duration: "10 min",
-    description:
-      "Traitement par électrothérapie pour stimuler la circulation sanguine et favoriser la santé du cuir chevelu.",
-    color: "pink",
-    includes: [
-      "Préparation du cuir chevelu",
-      "Traitement par électrothérapie",
-      "Application de sérums naturels",
-    ],
-    durationMinutes: 10,
-  },
-  {
-    id: 13,
-    name: "Luminothérapie",
-    price: "10 000 FCFA",
-    duration: "20 min",
-    description:
-      "Traitement par luminothérapie pour activer les cellules du cuir chevelu et favoriser la repousse.",
-    color: "teal",
-    includes: [
-      "Préparation du cuir chevelu",
-      "Traitement par luminothérapie",
-      "Application de sérums naturels",
-    ],
-    durationMinutes: 20,
-  },
-  {
     id: 2,
-    name: "Hairneedling - Tempes",
+    name: "Hairneedling (Tempes)",
     price: "35 000 FCFA",
     duration: "45 min",
     description:
@@ -183,7 +138,7 @@ export const services: Service[] = [
   },
   {
     id: 3,
-    name: "Hairneedling - Tête entière",
+    name: "Hairneedling (Tête entière)",
     price: "45 000 FCFA",
     duration: "60 min",
     description:
@@ -205,7 +160,7 @@ export const services: Service[] = [
 export const promoServices: Service[] = [
   {
     id: 401,
-    name: "Forfait 4 séances - Tempes",
+    name: "Forfait 4 séances (Tempes)",
     price: "135 000 FCFA",
     duration: "4 x 45 min",
     isPromo: true,
@@ -219,13 +174,13 @@ export const promoServices: Service[] = [
   },
   {
     id: 402,
-    name: "Forfait 4 séances - Tête entière",
+    name: "Forfait 4 séances (Tête entière)",
     price: "175 000 FCFA",
     duration: "4 x 60 min",
     isPromo: true,
     color: "teal",
     includes: [
-      "4 séances de Hairneedling - Tête entière",
+      "4 séances de Hairneedling (Tête entière)",
       "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
       "Diagnostic capillaire offert (valeur 10 000 FCFA)",
     ],
@@ -233,7 +188,7 @@ export const promoServices: Service[] = [
   },
   {
     id: 404,
-    name: "Forfait 6 séances - Tempes",
+    name: "Forfait 6 séances (Tempes)",
     price: "190 000 FCFA",
     duration: "6 x 45 min",
     isPromo: true,
@@ -247,7 +202,7 @@ export const promoServices: Service[] = [
   },
   {
     id: 405,
-    name: "Forfait 6 séances - Tête entière",
+    name: "Forfait 6 séances (Tête entière)",
     price: "250 000 FCFA",
     duration: "6 x 60 min",
     isPromo: true,

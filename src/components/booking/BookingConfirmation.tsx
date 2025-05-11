@@ -251,7 +251,11 @@ export default function BookingConfirmation({
 
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(12);
-      pdf.text(`Nom: ${customerInfo.name}`, 20, clientYPos + 7);
+      pdf.text(
+        `Nom: ${customerInfo.first_name} ${customerInfo.last_name}`,
+        20,
+        clientYPos + 7
+      );
       pdf.text(
         `Téléphone: ${customerInfo.phoneCountryCode}${customerInfo.phone}`,
         20,
@@ -579,7 +583,7 @@ export default function BookingConfirmation({
                       Vos coordonnées
                     </h5>
                     <p className="text-gray-700 dark:text-gray-300 mt-1">
-                      {customerInfo.name}
+                      {`${customerInfo.first_name} ${customerInfo.last_name}`}
                     </p>
                     <div className="flex items-center text-gray-600 dark:text-gray-400 mt-1">
                       <Phone className="w-3 h-3 mr-1" />

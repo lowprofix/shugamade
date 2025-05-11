@@ -384,7 +384,7 @@ export const products: Product[] = [
     name: "Oméga 3 EPH & DHA",
     description:
       "Complément alimentaire riche en acides gras essentiels pour nourrir les cheveux de l'intérieur.",
-    price: "8 500 FCFA",
+    price: "10 000 FCFA",
     image: "/images/products/omega3_epa_dha.jpg",
     category: "supplements",
     stock: 1,
@@ -396,7 +396,7 @@ export const products: Product[] = [
     name: "Saw palmetto",
     description:
       "Extrait naturel qui aide à réduire la chute des cheveux liée aux hormones.",
-    price: "8 500 FCFA",
+    price: "10 000 FCFA",
     image: "/images/products/saw_palmeto.jpg",
     category: "supplements",
     stock: 1,
@@ -408,7 +408,7 @@ export const products: Product[] = [
     name: "Pépins de courge",
     description:
       "Complément naturel riche en zinc et en fer pour renforcer les cheveux et stimuler leur croissance.",
-    price: "8 500 FCFA",
+    price: "10 000 FCFA",
     image: "/images/products/pepins_courge.jpg",
     category: "supplements",
     stock: 1,
@@ -420,7 +420,7 @@ export const products: Product[] = [
     name: "Collagène marin",
     description:
       "Protéine naturelle qui renforce la structure des cheveux et améliore leur élasticité.",
-    price: "8 500 FCFA",
+    price: "10 000 FCFA",
     image: "/images/products/collagene_marin.jpg",
     category: "supplements",
     stock: 1,
@@ -432,7 +432,7 @@ export const products: Product[] = [
     name: "Complexe cheveux",
     description:
       "Formule complète de vitamines et minéraux spécifiquement conçue pour la santé des cheveux.",
-    price: "8 500 FCFA",
+    price: "10 000 FCFA",
     image: "/images/products/complexe_cheveux.jpg",
     category: "supplements",
     stock: 1,
@@ -444,7 +444,7 @@ export const products: Product[] = [
     name: "Spiruline",
     description:
       "Super-aliment riche en protéines, fer et antioxydants pour des cheveux plus forts et plus brillants.",
-    price: "8 500 FCFA",
+    price: "10 000 FCFA",
     image: "/images/products/spiruline_bio.jpg",
     category: "supplements",
     stock: 1,
@@ -455,7 +455,7 @@ export const products: Product[] = [
     hiboutikId: 17,
     name: "Fer",
     description: "Complément alimentaire pour la santé des cheveux.",
-    price: "8 500 FCFA",
+    price: "10 000 FCFA",
     image: "/images/products/fer.jpg",
     category: "supplements",
     stock: 1,

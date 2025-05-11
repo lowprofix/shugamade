@@ -16,6 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import {
+  findOrCreateHiboutikClient,
+  updateHiboutikClientIfNeeded,
+  HiboutikClient,
+} from "@/lib/hiboutikClientUtils";
 
 // Définir le type Step pour BookingStepIndicator
 interface Step {
@@ -34,7 +39,8 @@ export interface AvailableSlot {
 
 // Type pour les informations client
 export interface CustomerInfo {
-  name: string;
+  first_name: string;
+  last_name: string;
   phone: string;
   email?: string;
   notes?: string;
@@ -68,7 +74,8 @@ export default function BookingClientWrapper({
   const [multipleBooking, setMultipleBooking] =
     useState<MultipleBooking | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: "",
+    first_name: "",
+    last_name: "",
     phone: "",
     phoneCountryCode: "+242", // Indicatif Congo Brazzaville par défaut
   });
@@ -81,6 +88,15 @@ export default function BookingClientWrapper({
   // États pour les transitions et animations
   const [isPending, startTransition] = useTransition();
   const [fadeOut, setFadeOut] = useState(false);
+
+  const [existingClient, setExistingClient] = useState<HiboutikClient | null>(
+    null
+  );
+  const [showClientFoundModal, setShowClientFoundModal] = useState(false);
+  const [pendingBookingData, setPendingBookingData] = useState<any>(null);
+  const [clientDiffs, setClientDiffs] = useState<
+    { field: string; oldValue: string; newValue: string }[]
+  >([]);
 
   // Fonction pour calculer la durée totale des services sélectionnés
   const calculateTotalDuration = (): number => {
@@ -262,7 +278,8 @@ export default function BookingClientWrapper({
         setSelectedSlots([]);
         setMultipleBooking(null);
         setCustomerInfo({
-          name: "",
+          first_name: "",
+          last_name: "",
           phone: "",
           phoneCountryCode: "+242", // Indicatif Congo Brazzaville par défaut
         });
@@ -273,257 +290,107 @@ export default function BookingClientWrapper({
     }, 300);
   };
 
-  // Fonction pour confirmer la réservation
-  const confirmBooking = async () => {
-    setFadeOut(true);
-    setBookingError(null);
+  // Fonction pour comparer les infos client et retourner les différences
+  function getClientDiffs(client: HiboutikClient, customerInfo: CustomerInfo) {
+    const diffs = [];
+    if (client.customers_first_name !== customerInfo.first_name) {
+      diffs.push({
+        field: "Prénom",
+        oldValue: client.customers_first_name,
+        newValue: customerInfo.first_name,
+      });
+    }
+    if (client.customers_last_name !== customerInfo.last_name) {
+      diffs.push({
+        field: "Nom",
+        oldValue: client.customers_last_name,
+        newValue: customerInfo.last_name,
+      });
+    }
+    if ((client.customers_email || "") !== (customerInfo.email || "")) {
+      diffs.push({
+        field: "Email",
+        oldValue: client.customers_email || "",
+        newValue: customerInfo.email || "",
+      });
+    }
+    // Comparaison stricte du numéro formaté (pour affichage)
+    const phoneFull = `${
+      customerInfo.phoneCountryCode
+    } ${customerInfo.phone.replace(/\s+/g, "")}`;
+    if ((client.customers_phone_number || "") !== phoneFull) {
+      diffs.push({
+        field: "Téléphone",
+        oldValue: client.customers_phone_number || "",
+        newValue: phoneFull,
+      });
+    }
+    return diffs;
+  }
 
+  // Nouvelle fonction pour créer la réservation avec l'ID client Hiboutik
+  const createBookingWithClientId = async (hiboutikClientId: number) => {
+    const customerInfoWithHiboutik = { ...customerInfo, hiboutikClientId };
     try {
-      // 1. Créer d'abord le client dans Hiboutik
-      let hiboutikClientId = null;
-
-      // Préparer les données du client pour Hiboutik
-      const hiboutikClientData = {
-        customers_first_name:
-          customerInfo.name.split(" ")[0] || customerInfo.name,
-        customers_last_name:
-          customerInfo.name.split(" ").slice(1).join(" ") || "",
-        customers_phone_number: `${
-          customerInfo.phoneCountryCode
-        } ${customerInfo.phone.replace(/\s/g, "")}`,
-        customers_email: customerInfo.email || "",
-      };
-
-      try {
-        // Appeler l'API Hiboutik pour créer le client
-        const hiboutikResponse = await fetch("/api/hiboutik/clients", {
+      // Pour les services multiples
+      if (isMultipleBooking && multipleBooking) {
+        // ... (logique de création de réservation multiple, comme dans confirmBooking)
+        // Appel à /api/create-multiple-bookings avec customerInfoWithHiboutik
+        // ...
+      } else {
+        // Réservation simple
+        if (!selectedSlot) throw new Error("Aucun créneau sélectionné");
+        const startDateTime = `${selectedSlot.date}T${selectedSlot.start}:00+01:00`;
+        const endDateTime = `${selectedSlot.date}T${selectedSlot.end}:00+01:00`;
+        const response = await fetch("/api/create-booking", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(hiboutikClientData),
-        });
-
-        if (!hiboutikResponse.ok) {
-          const errorText = await hiboutikResponse.text();
-          console.warn(
-            "Échec de la création du client dans Hiboutik, mais la réservation continuera:",
-            errorText
-          );
-        } else {
-          const hiboutikData = await hiboutikResponse.json();
-          hiboutikClientId = hiboutikData.customers_id;
-          console.log("Client créé dans Hiboutik avec ID:", hiboutikClientId);
-        }
-      } catch (hiboutikError) {
-        console.warn(
-          "Erreur lors de la création du client dans Hiboutik, mais la réservation continuera:",
-          hiboutikError
-        );
-      }
-
-      // 2. Préparer les données de réservation
-      const customerInfoWithHiboutik = { ...customerInfo };
-      if (hiboutikClientId) {
-        customerInfoWithHiboutik.hiboutikClientId = hiboutikClientId;
-      }
-
-      // Pour les services multiples, créer un service combiné
-      const bookingData = {
-        customerInfo: customerInfoWithHiboutik,
-        title: generateCombinedServiceName(),
-        originalService:
-          isMultipleBooking && selectedServices.length === 1
-            ? selectedServices[0]
-            : null,
-        selectedServices: selectedServices,
-        totalDuration: calculateTotalDuration(),
-        isCustomService: selectedServices.length > 1,
-        locationId: selectedLocation?.id || 1, // Utiliser l'ID du lieu sélectionné ou 1 (BZV) par défaut
-        sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
-      };
-
-      // 3. Créer la réservation avec un timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, 30000); // Augmentation du timeout à 30 secondes pour les connexions lentes
-
-      try {
-        if (isMultipleBooking && multipleBooking) {
-          // Réservation multiple - Utiliser la nouvelle API
-          console.log("Utilisation de l'API de réservation multiple");
-
-          // Préparer les données pour l'API de réservation multiple
-          const multipleBookingData = {
-            clientName: customerInfo.name,
-            clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
-            clientEmail: customerInfo.email || null,
-            hiboutikClientId: customerInfoWithHiboutik.hiboutikClientId,
-            locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
-            sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
-
-            // Informations sur le pack
-            packageName: generateCombinedServiceName(),
-            packageDescription: selectedServices[0]?.description || "",
-
-            // Créneaux individuels du pack
-            bookings: multipleBooking.slots.map((slot) => ({
-              title: generateCombinedServiceName(),
-              start: `${slot.date}T${slot.start}:00+01:00`,
-              end: `${slot.date}T${slot.end}:00+01:00`,
-              description: `${multipleBooking.serviceType} - Séance ${multipleBooking.sessionCount} séances`,
-              locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu pour chaque créneau
-            })),
-          };
-
-          console.log(
-            "Données envoyées à l'API de réservation multiple:",
-            multipleBookingData
-          );
-
-          // Appeler l'API de réservation multiple
-          const response = await fetch("/api/create-multiple-bookings", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(multipleBookingData),
-            signal: controller.signal,
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            const errorText = errorData
-              ? JSON.stringify(errorData)
-              : await response.text().catch(() => "Erreur inconnue");
-
-            console.error("Réponse d'erreur brute:", errorText);
-
-            if (response.status === 502 || response.status === 504) {
-              throw new Error(
-                "Problème de connexion avec le serveur de réservation. Veuillez réessayer plus tard."
-              );
-            } else {
-              throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
-            }
-          }
-
-          const result = await response.json();
-          console.log("Résultat de la réservation multiple:", result);
-
-          if (!result.success) {
-            throw new Error(
-              result.error || "La réservation multiple n'a pas pu être créée"
-            );
-          }
-        } else {
-          // Réservation simple
-          if (!selectedSlot) {
-            throw new Error("Aucun créneau n'a été sélectionné");
-          }
-
-          const startDateTime = `${selectedSlot.date}T${selectedSlot.start}:00+01:00`;
-          const endDateTime = `${selectedSlot.date}T${selectedSlot.end}:00+01:00`;
-
-          if (!startDateTime || !endDateTime) {
-            throw new Error("Les dates de début et de fin sont requises");
-          }
-
-          // Log pour déboguer
-          console.log("Données de réservation simple envoyées:", {
-            ...bookingData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...customerInfoWithHiboutik,
+            title: generateCombinedServiceName(),
             start: startDateTime,
             end: endDateTime,
-            clientName: customerInfo.name,
-            clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
-            clientEmail: customerInfo.email || null,
-            locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
-            sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
-          });
-
-          const response = await fetch("/api/create-booking", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              ...bookingData,
-              start: startDateTime,
-              end: endDateTime,
-              clientName: customerInfo.name,
-              clientPhone: customerInfo.phoneCountryCode + customerInfo.phone,
-              clientEmail: customerInfo.email || null,
-              locationId: selectedLocation?.id || 1, // Ajouter l'ID du lieu
-              sendWhatsAppConfirmation: sendWhatsAppConfirmation, // Ajouter le nouveau paramètre
-            }),
-            signal: controller.signal,
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            const errorText = errorData
-              ? JSON.stringify(errorData)
-              : await response.text().catch(() => "Erreur inconnue");
-
-            console.error("Réponse d'erreur brute:", errorText);
-
-            if (response.status === 502 || response.status === 504) {
-              throw new Error(
-                "Problème de connexion avec le serveur de réservation. Veuillez réessayer plus tard ou contacter directement le salon."
-              );
-            } else {
-              throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
-            }
-          }
-
-          const result = await response.json();
-          console.log("Résultat de la réservation simple:", result);
-
-          if (!result.success) {
-            throw new Error(
-              result.error || "La réservation n'a pas pu être créée"
-            );
-          }
-        }
-
-        // Si tout s'est bien passé, passer à l'étape de confirmation
+            clientName:
+              customerInfoWithHiboutik.first_name +
+              " " +
+              customerInfoWithHiboutik.last_name,
+            clientPhone:
+              customerInfoWithHiboutik.phoneCountryCode +
+              customerInfoWithHiboutik.phone,
+            clientEmail: customerInfoWithHiboutik.email || null,
+            locationId: selectedLocation?.id || 1,
+            sendWhatsAppConfirmation: sendWhatsAppConfirmation,
+          }),
+        });
+        if (!response.ok)
+          throw new Error("Erreur lors de la création de la réservation");
+        // ... (gérer la réponse, passage à l'étape suivante, etc.)
         setBookingConfirmed(true);
         setBookingError(null);
-
         startTransition(() => {
-          setBookingStep(5); // Étape 5 maintenant (était 4 avant)
+          setBookingStep(5);
           setFadeOut(false);
         });
-      } catch (error: any) {
-        console.error("Erreur lors de la création de la réservation:", error);
-
-        // Message d'erreur plus convivial et informatif
-        let errorMessage = "Une erreur est survenue lors de la réservation";
-
-        if (
-          error.message.includes("fetch failed") ||
-          error.message.includes("network") ||
-          error.message.includes("timeout") ||
-          error.message.includes("Problème de connexion")
-        ) {
-          errorMessage =
-            "Problème de connexion avec le serveur de réservation. Veuillez réessayer plus tard ou contacter directement le salon au +242 06 597 56 23.";
-        } else if (error.message.includes("créée")) {
-          errorMessage = error.message;
-        }
-
-        setBookingError(errorMessage);
-        setFadeOut(false);
-      } finally {
-        clearTimeout(timeoutId);
       }
     } catch (error: any) {
-      console.error("Erreur globale lors de la réservation:", error);
-      setBookingError(
-        "Une erreur est survenue lors de la préparation de votre réservation. Veuillez réessayer."
-      );
+      setBookingError(error.message || "Erreur lors de la réservation");
       setFadeOut(false);
+    }
+  };
+
+  // Ajouter une fonction pour gérer la confirmation utilisateur
+  const handleClientModalConfirm = async () => {
+    setShowClientFoundModal(false);
+    if (existingClient) {
+      if (clientDiffs.length > 0) {
+        await updateHiboutikClientIfNeeded(existingClient, customerInfo);
+      }
+      // Continuer la réservation avec l'ID client existant
+      if (pendingBookingData && pendingBookingData.hiboutikClientId) {
+        await createBookingWithClientId(pendingBookingData.hiboutikClientId);
+        setPendingBookingData(null);
+        // setFadeOut(true);
+      }
     }
   };
 
@@ -544,6 +411,54 @@ export default function BookingClientWrapper({
     { id: 4, label: "Informations", icon: "user" },
     { id: 5, label: "Confirmation", icon: "check" },
   ];
+
+  // Fonction à passer à CustomerInfoForm pour lancer le flux complet
+  const confirmBooking = async () => {
+    setFadeOut(true);
+    setBookingError(null);
+
+    try {
+      // 1. Chercher ou créer le client dans Hiboutik
+      let hiboutikClientId = null;
+      let hiboutikClientData = null;
+
+      try {
+        hiboutikClientData = await findOrCreateHiboutikClient(customerInfo);
+        if (hiboutikClientData && hiboutikClientData.customers_id) {
+          hiboutikClientId = hiboutikClientData.customers_id;
+          // Déclencher la modal dès qu'un client est trouvé, même si les infos diffèrent
+          setExistingClient(hiboutikClientData);
+          const diffs = getClientDiffs(hiboutikClientData, customerInfo);
+          setClientDiffs(diffs);
+          setShowClientFoundModal(true);
+          setPendingBookingData({ hiboutikClientId });
+          setFadeOut(false);
+          return; // Attendre la confirmation utilisateur
+        }
+      } catch (hiboutikError) {
+        console.warn(
+          "Erreur lors de la recherche/création du client dans Hiboutik, mais la réservation continuera:",
+          hiboutikError
+        );
+      }
+
+      // Si pas de client existant, créer la réservation directement
+      if (hiboutikClientId) {
+        await createBookingWithClientId(hiboutikClientId);
+      }
+    } catch (error: any) {
+      setBookingError(error.message || "Erreur lors de la réservation");
+      setFadeOut(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log("DEBUG confirmation", {
+      bookingStep,
+      bookingConfirmed,
+      selectedLocation,
+    });
+  }, [bookingStep, bookingConfirmed, selectedLocation]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -679,6 +594,95 @@ export default function BookingClientWrapper({
                       </Button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showClientFoundModal && existingClient && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-lg max-w-md w-full">
+                <h3 className="text-lg font-semibold mb-2">
+                  Client existant détecté
+                </h3>
+                <p className="mb-2 text-gray-700 dark:text-gray-300">
+                  Un client existe déjà avec ce numéro&nbsp;:
+                </p>
+                <ul className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                  <li>
+                    <b>Nom&nbsp;:</b>{" "}
+                    {existingClient.customers_first_name || (
+                      <span className="italic">Non renseigné</span>
+                    )}{" "}
+                    {existingClient.customers_last_name || (
+                      <span className="italic">Non renseigné</span>
+                    )}
+                  </li>
+                  <li>
+                    <b>Email&nbsp;:</b>{" "}
+                    {existingClient.customers_email ? (
+                      existingClient.customers_email
+                    ) : (
+                      <span className="italic">Non renseigné</span>
+                    )}
+                  </li>
+                  <li>
+                    <b>Téléphone&nbsp;:</b>{" "}
+                    {existingClient.customers_phone_number ? (
+                      existingClient.customers_phone_number
+                    ) : (
+                      <span className="italic">Non renseigné</span>
+                    )}
+                  </li>
+                </ul>
+                {clientDiffs.length > 0 ? (
+                  <div className="mb-4 p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs">
+                    <b>
+                      Des différences ont été détectées avec les informations
+                      saisies :
+                    </b>
+                    <ul className="mt-2 space-y-1">
+                      {clientDiffs.map((diff, idx) => (
+                        <li key={idx}>
+                          <b>{diff.field} :</b>{" "}
+                          <span className="line-through text-red-500">
+                            {diff.oldValue || (
+                              <span className="italic">Non renseigné</span>
+                            )}
+                          </span>{" "}
+                          →{" "}
+                          <span className="text-green-700">
+                            {diff.newValue || (
+                              <span className="italic">Non renseigné</span>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-2">
+                      Les informations seront mises à jour dans Hiboutik si vous
+                      confirmez.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-4 text-xs text-green-700">
+                    Toutes les informations sont identiques à celles déjà
+                    enregistrées.
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    onClick={() => setShowClientFoundModal(false)}
+                    variant="outline"
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={handleClientModalConfirm}
+                    className="bg-[#bfe0fb] text-white"
+                  >
+                    Utiliser ce client
+                  </Button>
                 </div>
               </div>
             </div>

@@ -46,6 +46,24 @@ export default function BookingConfirmation({
   const [showConfetti, setShowConfetti] = useState(false);
   const bookingCardRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    console.log("DEBUG BookingConfirmation mounted", {
+      services,
+      slot,
+      customerInfo,
+      isMultipleBooking,
+      multipleBooking,
+      selectedLocation,
+    });
+  }, [
+    services,
+    slot,
+    customerInfo,
+    isMultipleBooking,
+    multipleBooking,
+    selectedLocation,
+  ]);
+
   // Fonction pour calculer la durée totale des services
   const calculateTotalDuration = (): number => {
     return services.reduce((total, service) => {

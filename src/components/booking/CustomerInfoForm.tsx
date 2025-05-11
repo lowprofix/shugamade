@@ -169,24 +169,23 @@ export default function CustomerInfoForm({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!customerInfo.name.trim()) {
-      newErrors.name = "Veuillez entrer votre nom";
+    if (!customerInfo.first_name.trim()) {
+      newErrors.first_name = "Veuillez entrer votre prénom";
     }
-
+    if (!customerInfo.last_name.trim()) {
+      newErrors.last_name = "Veuillez entrer votre nom";
+    }
     if (!customerInfo.phone.trim()) {
       newErrors.phone = "Veuillez entrer votre numéro de téléphone";
     } else if (!/^[0-9\s]{8,15}$/.test(customerInfo.phone.trim())) {
-      // Modifié pour ne pas inclure le + dans le numéro (désormais dans phoneCountryCode)
       newErrors.phone = "Veuillez entrer un numéro de téléphone valide";
     }
-
     if (
       customerInfo.email &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.email.trim())
     ) {
       newErrors.email = "Veuillez entrer une adresse email valide";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -260,31 +259,63 @@ export default function CustomerInfoForm({
           <Card className="overflow-hidden border-none shadow-md">
             <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Nom complet <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <User className="w-4 h-4 text-gray-400" />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Prénom <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <User className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="first_name"
+                        value={customerInfo.first_name}
+                        onChange={onChange}
+                        className={cn(
+                          "pl-10 pr-4 py-2 w-full bg-gray-50 dark:bg-gray-800 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e2b3f7]/50 focus:border-transparent",
+                          errors.first_name
+                            ? "border-red-300 dark:border-red-700"
+                            : "border-gray-200 dark:border-gray-700"
+                        )}
+                        placeholder="Votre prénom"
+                      />
                     </div>
-                    <input
-                      type="text"
-                      name="name"
-                      value={customerInfo.name}
-                      onChange={onChange}
-                      className={cn(
-                        "pl-10 pr-4 py-2 w-full bg-gray-50 dark:bg-gray-800 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e2b3f7]/50 focus:border-transparent",
-                        errors.name
-                          ? "border-red-300 dark:border-red-700"
-                          : "border-gray-200 dark:border-gray-700"
-                      )}
-                      placeholder="Votre nom et prénom"
-                    />
+                    {errors.first_name && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.first_name}
+                      </p>
+                    )}
                   </div>
-                  {errors.name && (
-                    <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-                  )}
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Nom <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <User className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        name="last_name"
+                        value={customerInfo.last_name}
+                        onChange={onChange}
+                        className={cn(
+                          "pl-10 pr-4 py-2 w-full bg-gray-50 dark:bg-gray-800 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e2b3f7]/50 focus:border-transparent",
+                          errors.last_name
+                            ? "border-red-300 dark:border-red-700"
+                            : "border-gray-200 dark:border-gray-700"
+                        )}
+                        placeholder="Votre nom"
+                      />
+                    </div>
+                    {errors.last_name && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.last_name}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">

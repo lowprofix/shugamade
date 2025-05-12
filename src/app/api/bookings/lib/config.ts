@@ -33,9 +33,20 @@ export const LOCATIONS: LocationConfig[] = [
     // Dates disponibles pour Pointe-Noire
     availableDates: [
       // Mai
-
       "2025-05-23",
       "2025-05-24",
+      // Juin
+      "2025-06-27",
+      "2025-06-28",
+      // Juillet
+      "2025-07-25",
+      "2025-07-26",
+      // Août
+      "2025-08-29",
+      "2025-08-30",
+      // Septembre
+      "2025-09-26",
+      "2025-09-27",
     ],
   },
 ];

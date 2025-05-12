@@ -17,7 +17,8 @@ import { Info } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
-  findOrCreateHiboutikClient,
+  findHiboutikClient,
+  createHiboutikClient,
   updateHiboutikClientIfNeeded,
   HiboutikClient,
 } from "@/lib/hiboutikClientUtils";
@@ -378,19 +379,48 @@ export default function BookingClientWrapper({
     }
   };
 
-  // Ajouter une fonction pour gérer la confirmation utilisateur
+  // Fonction pour gérer la confirmation utilisateur dans la modale de client existant
   const handleClientModalConfirm = async () => {
     setShowClientFoundModal(false);
-    if (existingClient) {
-      if (clientDiffs.length > 0) {
-        await updateHiboutikClientIfNeeded(existingClient, customerInfo);
+    setFadeOut(true);
+
+    try {
+      if (existingClient) {
+        // Mettre à jour le client si des différences sont détectées
+        if (clientDiffs.length > 0) {
+          await updateHiboutikClientIfNeeded(existingClient, customerInfo);
+        }
+
+        // Continuer la réservation avec l'ID client existant
+        if (pendingBookingData && pendingBookingData.hiboutikClientId) {
+          await createBookingWithClientId(pendingBookingData.hiboutikClientId);
+          setPendingBookingData(null);
+        }
       }
-      // Continuer la réservation avec l'ID client existant
-      if (pendingBookingData && pendingBookingData.hiboutikClientId) {
-        await createBookingWithClientId(pendingBookingData.hiboutikClientId);
-        setPendingBookingData(null);
-        // setFadeOut(true);
+    } catch (error: any) {
+      setBookingError(
+        error.message || "Erreur lors de la mise à jour du client"
+      );
+      setFadeOut(false);
+    }
+  };
+
+  // Fonction pour annuler et créer un nouveau client
+  const handleClientModalCancel = async () => {
+    setShowClientFoundModal(false);
+    setFadeOut(true);
+
+    try {
+      // Créer un nouveau client malgré l'existence d'un client similaire
+      const newClientData = await createHiboutikClient(customerInfo);
+      if (newClientData && newClientData.customers_id) {
+        await createBookingWithClientId(newClientData.customers_id);
+      } else {
+        throw new Error("Impossible de créer un nouveau client");
       }
+    } catch (error: any) {
+      setBookingError(error.message || "Erreur lors de la création du client");
+      setFadeOut(false);
     }
   };
 
@@ -418,15 +448,20 @@ export default function BookingClientWrapper({
     setBookingError(null);
 
     try {
-      // 1. Chercher ou créer le client dans Hiboutik
+      // 1. D'abord chercher si un client existe déjà
       let hiboutikClientId = null;
       let hiboutikClientData = null;
 
       try {
-        hiboutikClientData = await findOrCreateHiboutikClient(customerInfo);
+        // Rechercher le client par téléphone uniquement (sans création)
+        hiboutikClientData = await findHiboutikClient({
+          phone: customerInfo.phone,
+          phoneCountryCode: customerInfo.phoneCountryCode,
+        });
+
+        // Si un client existant est trouvé, afficher la modale
         if (hiboutikClientData && hiboutikClientData.customers_id) {
           hiboutikClientId = hiboutikClientData.customers_id;
-          // Déclencher la modal dès qu'un client est trouvé, même si les infos diffèrent
           setExistingClient(hiboutikClientData);
           const diffs = getClientDiffs(hiboutikClientData, customerInfo);
           setClientDiffs(diffs);
@@ -435,30 +470,34 @@ export default function BookingClientWrapper({
           setFadeOut(false);
           return; // Attendre la confirmation utilisateur
         }
+
+        // Si aucun client existant, créer un nouveau client
+        hiboutikClientData = await createHiboutikClient(customerInfo);
+        if (hiboutikClientData && hiboutikClientData.customers_id) {
+          hiboutikClientId = hiboutikClientData.customers_id;
+          // Créer directement la réservation avec le nouveau client
+          await createBookingWithClientId(hiboutikClientId);
+        } else {
+          throw new Error("Impossible de créer ou trouver le client");
+        }
       } catch (hiboutikError) {
         console.warn(
           "Erreur lors de la recherche/création du client dans Hiboutik, mais la réservation continuera:",
           hiboutikError
         );
-      }
-
-      // Si pas de client existant, créer la réservation directement
-      if (hiboutikClientId) {
-        await createBookingWithClientId(hiboutikClientId);
+        // Tenter de créer la réservation sans client Hiboutik
+        setBookingConfirmed(true);
+        setBookingError(null);
+        startTransition(() => {
+          setBookingStep(5);
+          setFadeOut(false);
+        });
       }
     } catch (error: any) {
       setBookingError(error.message || "Erreur lors de la réservation");
       setFadeOut(false);
     }
   };
-
-  useEffect(() => {
-    console.log("DEBUG confirmation", {
-      bookingStep,
-      bookingConfirmed,
-      selectedLocation,
-    });
-  }, [bookingStep, bookingConfirmed, selectedLocation]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -606,40 +645,46 @@ export default function BookingClientWrapper({
                   Client existant détecté
                 </h3>
                 <p className="mb-2 text-gray-700 dark:text-gray-300">
-                  Un client existe déjà avec ce numéro&nbsp;:
+                  Un client existe déjà avec ce numéro de téléphone.
+                  Souhaitez-vous l'utiliser pour cette réservation?
                 </p>
-                <ul className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                  <li>
-                    <b>Nom&nbsp;:</b>{" "}
-                    {existingClient.customers_first_name || (
-                      <span className="italic">Non renseigné</span>
-                    )}{" "}
-                    {existingClient.customers_last_name || (
-                      <span className="italic">Non renseigné</span>
-                    )}
-                  </li>
-                  <li>
-                    <b>Email&nbsp;:</b>{" "}
-                    {existingClient.customers_email ? (
-                      existingClient.customers_email
-                    ) : (
-                      <span className="italic">Non renseigné</span>
-                    )}
-                  </li>
-                  <li>
-                    <b>Téléphone&nbsp;:</b>{" "}
-                    {existingClient.customers_phone_number ? (
-                      existingClient.customers_phone_number
-                    ) : (
-                      <span className="italic">Non renseigné</span>
-                    )}
-                  </li>
-                </ul>
+                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Information du client existant:
+                  </p>
+                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <li>
+                      <b>Nom&nbsp;:</b>{" "}
+                      {existingClient.customers_first_name || (
+                        <span className="italic">Non renseigné</span>
+                      )}{" "}
+                      {existingClient.customers_last_name || (
+                        <span className="italic">Non renseigné</span>
+                      )}
+                    </li>
+                    <li>
+                      <b>Email&nbsp;:</b>{" "}
+                      {existingClient.customers_email ? (
+                        existingClient.customers_email
+                      ) : (
+                        <span className="italic">Non renseigné</span>
+                      )}
+                    </li>
+                    <li>
+                      <b>Téléphone&nbsp;:</b>{" "}
+                      {existingClient.customers_phone_number ? (
+                        existingClient.customers_phone_number
+                      ) : (
+                        <span className="italic">Non renseigné</span>
+                      )}
+                    </li>
+                  </ul>
+                </div>
                 {clientDiffs.length > 0 ? (
                   <div className="mb-4 p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs">
                     <b>
-                      Des différences ont été détectées avec les informations
-                      saisies :
+                      Les informations que vous avez saisies diffèrent de celles
+                      enregistrées:
                     </b>
                     <ul className="mt-2 space-y-1">
                       {clientDiffs.map((diff, idx) => (
@@ -660,22 +705,34 @@ export default function BookingClientWrapper({
                       ))}
                     </ul>
                     <div className="mt-2">
-                      Les informations seront mises à jour dans Hiboutik si vous
-                      confirmez.
+                      <p>Deux options s'offrent à vous:</p>
+                      <ul className="mt-1 ml-4 list-disc">
+                        <li>
+                          Cliquez sur "Utiliser ce client" pour mettre à jour
+                          les informations existantes
+                        </li>
+                        <li>
+                          Cliquez sur "Créer nouveau client" pour créer un
+                          nouveau profil client
+                        </li>
+                      </ul>
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-4 text-xs text-green-700">
-                    Toutes les informations sont identiques à celles déjà
-                    enregistrées.
+                  <div className="mb-4 p-3 rounded bg-green-50 border border-green-200 text-green-700 text-xs">
+                    <b>
+                      Les informations sont identiques à celles déjà
+                      enregistrées.
+                    </b>
+                    <p className="mt-1">
+                      Vous pouvez utiliser ce client pour votre réservation ou
+                      créer un nouveau profil.
+                    </p>
                   </div>
                 )}
                 <div className="flex gap-2 justify-end">
-                  <Button
-                    onClick={() => setShowClientFoundModal(false)}
-                    variant="outline"
-                  >
-                    Annuler
+                  <Button onClick={handleClientModalCancel} variant="outline">
+                    Créer nouveau client
                   </Button>
                   <Button
                     onClick={handleClientModalConfirm}

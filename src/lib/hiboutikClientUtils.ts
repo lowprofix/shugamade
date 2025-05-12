@@ -84,7 +84,22 @@ export async function createHiboutikClient(customerInfo: {
 }
 
 /**
+ * Cherche un client Hiboutik par téléphone uniquement (sans création)
+ */
+export async function findHiboutikClient(customerInfo: {
+  phone: string;
+  phoneCountryCode: string;
+}): Promise<HiboutikClient | null> {
+  // Recherche par numéro de téléphone (toutes variantes)
+  return await searchHiboutikClientByPhone(
+    customerInfo.phone,
+    customerInfo.phoneCountryCode
+  );
+}
+
+/**
  * Cherche un client Hiboutik par téléphone, ou le crée si non trouvé
+ * @deprecated Utiliser findHiboutikClient et createHiboutikClient séparément
  */
 export async function findOrCreateHiboutikClient(customerInfo: {
   first_name: string;

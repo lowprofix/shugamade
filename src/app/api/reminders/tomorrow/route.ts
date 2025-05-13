@@ -567,7 +567,20 @@ export async function POST(request: NextRequest) {
           }
 
           // Message personnalisé pour le rappel
-          const message = `Bonjour ${client.clientName}, nous vous rappelons votre rendez-vous "${serviceName}" demain ${formattedDate} à ${client.time} chez ShugaMade. En cas d'empêchement, merci de nous contacter au plus tôt. À très bientôt !`;
+          const message =
+            `Bonjour ${client.clientName}, nous vous rappelons votre rendez-vous "${serviceName}" demain ${formattedDate} à ${client.time} chez ShugaMade.` +
+            `\n\n🔹 Préparation avant la séance\n` +
+            `✅ Cheveux propres et sans produit : Merci de vous assurer que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).\n\n` +
+            `⏳ Ponctualité\n` +
+            `• Merci d'arriver à l'heure afin de profiter pleinement de votre séance.\n` +
+            `• Un retard de plus de 30 minutes entraînera l'annulation de la séance sans possibilité de remboursement de l'acompte.\n\n` +
+            `❌ Annulation & Report\n` +
+            `• Toute annulation ou report doit être signalé au moins 24h à l'avance.\n` +
+            `• Au-delà de ce délai, l'acompte ne pourra pas être remboursé.\n\n` +
+            `Si vous avez des questions, n'hésitez pas à me contacter.\n` +
+            `\n\nÀ très bientôt !\n` +
+            `Eunice – SHUGAMADE\n` +
+            `📞 +242 06 597 56 23`;
 
           try {
             // Envoyer le message WhatsApp

@@ -356,15 +356,6 @@ export async function POST(request: NextRequest) {
           `  - Mobile Money: +242 06 597 56 23\n` +
           `  - Airtel Money: +242 05 092 89 99\n\n` +
           `L'acompte sera bien entendu déduit du montant total de la prestation.\n\n` +
-          `🔹 Préparation avant chaque séance\n` +
-          `✅ Cheveux propres et sans produit : Merci de vous assurer que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).\n\n` +
-          `⏳ Ponctualité\n` +
-          `• Merci d'arriver à l'heure afin de profiter pleinement de vos séances.\n` +
-          `• Un retard de plus de 30 minutes entraînera l'annulation de la séance sans possibilité de remboursement de l'acompte.\n\n` +
-          `❌ Annulation & Report\n` +
-          `• Toute annulation ou report doit être signalé au moins 24h à l'avance.\n` +
-          `• Au-delà de ce délai, l'acompte ne pourra pas être remboursé.\n\n` +
-          `Si vous avez des questions, n'hésitez pas à me contacter.\n` +
           `À très bientôt !\n\n` +
           `Eunice – SHUGAMADE\n` +
           `📞 +242 06 597 56 23`;

@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
-
-/**
- * Route pour envoyer un message WhatsApp à un client spécifique
- */
-export async function GET(
+/** * Route pour envoyer un message WhatsApp à un client spécifique */ export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     if (!id) {
       return NextResponse.json(
         { success: false, error: "ID client requis" },

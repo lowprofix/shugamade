@@ -6,10 +6,10 @@ import { supabase } from "@/lib/supabase/client";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { session_id: string } }
-) {
+  context: { params: Promise<{ session_id: string }> }
+): Promise<NextResponse> {
   try {
-    const { session_id } = params;
+    const { session_id } = await context.params;
     if (!session_id) {
       return NextResponse.json(
         { success: false, error: "ID session requis" },

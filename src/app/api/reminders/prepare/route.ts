@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 import { extractPhoneNumber, extractClientName } from "@/lib/reminder-utils";
+import { toZonedTime, format } from "date-fns-tz";
+import { fr } from "date-fns/locale";
+
+// Définir la constante TIMEZONE
+const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
 
 /**
  * Route pour récupérer les rendez-vous de demain et préparer les rappels
@@ -47,13 +52,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 3. Formater la date pour demain
+    // 3. Formater la date pour demain avec le bon fuseau horaire
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const formattedDate = tomorrow.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
+    const tomorrowInTimezone = toZonedTime(tomorrow, TIMEZONE);
+    const formattedDate = format(tomorrowInTimezone, "EEEE d MMMM", {
+      locale: fr,
+      timeZone: TIMEZONE,
     });
 
     // 4. Créer une nouvelle session de rappels
@@ -116,12 +121,14 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // Extraire l'heure du rendez-vous
+        // Extraire l'heure du rendez-vous avec le bon fuseau horaire
         let appointmentTime = "";
         if (appointment.start?.dateTime) {
-          appointmentTime = new Date(
-            appointment.start.dateTime
-          ).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+          const startTime = toZonedTime(
+            new Date(appointment.start.dateTime),
+            TIMEZONE
+          );
+          appointmentTime = format(startTime, "HH:mm", { timeZone: TIMEZONE });
         }
 
         // Message personnalisé pour le rappel

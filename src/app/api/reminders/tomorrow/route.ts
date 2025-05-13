@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { toZonedTime, format } from "date-fns-tz";
+import { fr } from "date-fns/locale";
+
+// Définir la constante TIMEZONE
+const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
 
 // Interfaces pour nos types de données
 interface CalendarEvent {
@@ -250,11 +255,11 @@ export async function GET(request: NextRequest) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Formatage de la date en français
-    const formattedDate = tomorrow.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
+    // Formatage de la date en français avec le bon fuseau horaire
+    const tomorrowInTimezone = toZonedTime(tomorrow, TIMEZONE);
+    const formattedDate = format(tomorrowInTimezone, "EEEE d MMMM", {
+      locale: fr,
+      timeZone: TIMEZONE,
     });
 
     // Créer des informations simplifiées pour chaque rendez-vous
@@ -263,15 +268,20 @@ export async function GET(request: NextRequest) {
         // Essayer d'extraire le numéro de téléphone
         const phoneNumber = extractPhoneNumber(appointment.description);
 
+        // Formater l'heure avec le bon fuseau horaire
+        let formattedTime = "";
+        if (appointment.start?.dateTime) {
+          const startTime = toZonedTime(
+            new Date(appointment.start.dateTime),
+            TIMEZONE
+          );
+          formattedTime = format(startTime, "HH:mm", { timeZone: TIMEZONE });
+        }
+
         return {
           summary: appointment.summary,
           date: appointment.start?.dateTime || appointment.start,
-          time: appointment.start?.dateTime
-            ? new Date(appointment.start.dateTime).toLocaleTimeString("fr-FR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "",
+          time: formattedTime,
           hasDescription: !!appointment.description,
           phoneExtracted: !!phoneNumber,
           phoneNumber: phoneNumber,
@@ -354,13 +364,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. Formater la date pour demain
+    // 3. Formater la date pour demain avec le bon fuseau horaire
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const formattedDate = tomorrow.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
+    const tomorrowInTimezone = toZonedTime(tomorrow, TIMEZONE);
+    const formattedDate = format(tomorrowInTimezone, "EEEE d MMMM", {
+      locale: fr,
+      timeZone: TIMEZONE,
     });
 
     // 4. Extraire et préparer les informations client
@@ -382,15 +392,21 @@ export async function POST(request: NextRequest) {
         // Si pas de description ou pas de numéro extrait, ajouter à la liste pour traitement manuel
         if (!phoneFromDescription) {
           console.log(`Pas de numéro trouvé pour: ${appointment.summary}`);
+
+          // Formater l'heure avec le bon fuseau horaire
+          let formattedTime = "";
+          if (appointment.start?.dateTime) {
+            const startTime = toZonedTime(
+              new Date(appointment.start.dateTime),
+              TIMEZONE
+            );
+            formattedTime = format(startTime, "HH:mm", { timeZone: TIMEZONE });
+          }
+
           manuallyProcessedClients.push({
             summary: appointment.summary,
             date: appointment.start?.dateTime || appointment.start,
-            time: appointment.start?.dateTime
-              ? new Date(appointment.start.dateTime).toLocaleTimeString(
-                  "fr-FR",
-                  { hour: "2-digit", minute: "2-digit" }
-                )
-              : "",
+            time: formattedTime,
             missingPhone: true,
             clientName: nameFromSummary,
           });
@@ -411,12 +427,14 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Extraire l'heure du rendez-vous
+        // Extraire l'heure du rendez-vous avec le bon fuseau horaire
         let appointmentTime = "";
         if (appointment.start?.dateTime) {
-          appointmentTime = new Date(
-            appointment.start.dateTime
-          ).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+          const startTime = toZonedTime(
+            new Date(appointment.start.dateTime),
+            TIMEZONE
+          );
+          appointmentTime = format(startTime, "HH:mm", { timeZone: TIMEZONE });
         }
 
         // Message personnalisé pour le rappel

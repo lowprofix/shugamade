@@ -125,20 +125,26 @@ export async function GET(request: NextRequest) {
         }
 
         // Message personnalisé pour le rappel
-        const message =
-          `Bonjour ${nameFromSummary}, nous vous rappelons votre rendez-vous "${serviceName}" demain ${formattedDate} à ${appointmentTime} chez ShugaMade.` +
-          `\n\n🔹 Préparation avant la séance\n` +
-          `✅ Cheveux propres et sans produit : Merci de vous assurer que vos cheveux, en particulier la zone à traiter, soient propres et exempts de tout produit (huiles, gels, crèmes, etc.).\n\n` +
-          `⏳ Ponctualité\n` +
-          `• Merci d'arriver à l'heure afin de profiter pleinement de votre séance.\n` +
-          `• Un retard de plus de 30 minutes entraînera l'annulation de la séance sans possibilité de remboursement de l'acompte.\n\n` +
-          `❌ Annulation & Report\n` +
-          `• Toute annulation ou report doit être signalé au moins 24h à l'avance.\n` +
-          `• Au-delà de ce délai, l'acompte ne pourra pas être remboursé.\n\n` +
-          `Si vous avez des questions, n'hésitez pas à me contacter.\n` +
-          `\n\nÀ très bientôt !\n` +
-          `Eunice – SHUGAMADE\n` +
-          `📞 +242 06 597 56 23`;
+        const message = `Bonjour ${nameFromSummary},
+Nous vous rappelons votre rendez-vous "${serviceName}" pour demain ${formattedDate} à ${appointmentTime} à l'institut SHUGAMADE.
+
+📍 Bacongo, en face de l'école 5 Chemin, dans l'immeuble carrelé en marron.
+
+✅ Préparation avant la séance :
+* Veillez à ce que vos cheveux soient propres et sans produit.
+
+Merci de bien vouloir confirmer votre présence afin que votre créneau soit maintenu.
+
+⚠️ Informations importantes :
+* Un retard de plus de 30 minutes entraînera l'annulation de la séance.
+* Toute annulation doit être signalée au moins 24h à l'avance.
+* Sans annulation dans les délais, l'acompte ne pourra pas être remboursé.
+
+Pour toute question ou information complémentaire, n'hésitez pas à me contacter.
+
+À bientôt,
+Eunice – Institut SHUGAMADE
+📞 +242 06 597 56 23`;
 
         // Ajouter le client à la liste pour insertion en base de données
         clientsForDb.push({

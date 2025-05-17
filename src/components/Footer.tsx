@@ -151,19 +151,19 @@ export default function Footer({ scrollToSection }: FooterProps) {
               <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-[#ffb2dd] to-[#e2b3f7]"></span>
             </h3>
             <ul className="space-y-1">
-              <FooterLink href="/#booking?service=diagnostic">
+              <FooterLink href="/#services">
                 Diagnostic capillaire
               </FooterLink>
-              <FooterLink href="/#booking?service=hairneedling">
+              <FooterLink href="/#services">
                 Hairneedling
               </FooterLink>
-              <FooterLink href="/#booking?service=electrotherapie">
+              <FooterLink href="/#services">
                 Électrothérapie
               </FooterLink>
-              <FooterLink href="/#booking?service=luminotherapie">
+              <FooterLink href="/#services">
                 Luminothérapie
               </FooterLink>
-              <FooterLink href="/#booking?service=massage">
+              <FooterLink href="/#services">
                 Massage crânien
               </FooterLink>
             </ul>

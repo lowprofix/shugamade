@@ -58,7 +58,7 @@ export const locations: Location[] = [
   {
     id: 1,
     name: "Institut ShugaMade - BZV",
-    address: "119 Rue Bangalas, Poto-Poto, Brazzaville, Congo",
+    address: "5 Chemins, Bacongo, Brazzaville, Congo",
     description: "2eme ruelle après la station Afrique de l'avenue de France",
   },
   {
@@ -538,7 +538,7 @@ export const bookingConditions = {
     "Ponctualité : Merci d'arriver à l'heure. Un retard de plus de 15 minutes peut entraîner l'annulation de la séance sans possibilité de remboursement de l'acompte.",
   cancellation:
     "Annulation et report : Toute annulation doit être signalée au moins 24h à l'avance. Au-delà de ce délai, l'acompte ne sera pas remboursé.",
-  address: "Adresse: 119 RUE BANGALAS, POTO-POTO BRAZZAVILLE",
+  address: "Adresse: 5 Chemins, Bacongo, Brazzaville, Congo",
   understanding:
     "Nous comprenons que des imprévus peuvent arriver, mais afin de garantir un service de qualité à chacun, nous vous demandons de respecter ces conditions. Merci pour votre compréhension et votre confiance !",
 };

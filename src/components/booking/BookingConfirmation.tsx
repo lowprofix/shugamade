@@ -275,7 +275,7 @@ export default function BookingConfirmation({
       pdf.setFontSize(12);
       pdf.text("Institut ShugaMade", 20, addressYPos + 7);
       pdf.text(
-        "119 Rue Bangalas, Poto-Poto, Brazzaville, Congo",
+        "5 Chemins, Bacongo, Brazzaville, Congo",
         20,
         addressYPos + 14
       );
@@ -362,7 +362,7 @@ export default function BookingConfirmation({
     }
 
     shareText +=
-      "Adresse: Institut ShugaMade, 119 Rue Bangalas, Poto-Poto, Brazzaville, Congo\n\n";
+      "Adresse: Institut ShugaMade, 5 Chemins, Bacongo, Brazzaville, Congo\n\n";
     shareText += "Plus d'informations sur: https://shugamade.com";
 
     try {
@@ -610,7 +610,7 @@ export default function BookingConfirmation({
                       Institut ShugaMade
                     </p>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      119 Rue Bangalas, Poto-Poto, Brazzaville, Congo
+                      5 Chemins, Bacongo, Brazzaville, Congo
                     </p>
                   </div>
                 </div>

@@ -246,7 +246,7 @@ export default function ServiceSelection({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" suppressHydrationWarning>
       <div className="flex items-center justify-between">
         <h3 className="flex items-center text-xl font-medium text-gray-800 dark:text-white">
           <Check className="mr-2 text-[#ffb2dd]" size={20} />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 import { extractPhoneNumber, extractClientName } from "@/lib/reminder-utils";
+import { isPointeNoireSession, getSessionLocation } from "../../bookings/lib/locations";
 import { toZonedTime, format } from "date-fns-tz";
 import { fr } from "date-fns/locale";
 
@@ -30,10 +31,24 @@ export async function GET(request: NextRequest) {
       },
     });
 
+   // Gérer le cas où la réponse est vide (204 No Content)
+    if (response.status === 204) {
+      return NextResponse.json({
+        success: true,
+        message: "Aucun rendez-vous prévu pour demain",
+        count: 0,
+        status: "NO_APPOINTMENTS",
+      });
+    }
+
     if (!response.ok) {
-      console.error("Erreur lors de la récupération des rendez-vous");
+      console.error("Erreur lors de la récupération des rendez-vous:", response.status);
       return NextResponse.json(
-        { success: false, error: "Impossible de récupérer les rendez-vous" },
+        { 
+          success: false, 
+          error: "Impossible de récupérer les rendez-vous",
+          status: "API_ERROR"
+        },
         { status: response.status }
       );
     }
@@ -135,7 +150,10 @@ export async function GET(request: NextRequest) {
         const message = `Bonjour ${nameFromSummary},
 Nous vous rappelons votre rendez-vous "${serviceName}" pour demain ${formattedDate} à ${appointmentTime} à l'institut SHUGAMADE.
 
-📍 Bacongo, en face de l'école 5 Chemin, dans l'immeuble carrelé en marron.
+📍 ${isPointeNoireSession(formattedDate)
+          ? "Mpita, 2ême ruelle après Tatie-Louttar, en face de l'école bénédiction Pointe-Noire"
+          : "Bacongo, en face de l'école 5 Chemin, dans l'immeuble carrelé en marron."
+}
 
 ✅ Préparation avant la séance :
 * Veillez à ce que vos cheveux soient propres et sans produit.

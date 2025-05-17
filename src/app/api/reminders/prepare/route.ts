@@ -151,8 +151,8 @@ export async function GET(request: NextRequest) {
 Nous vous rappelons votre rendez-vous "${serviceName}" pour demain ${formattedDate} à ${appointmentTime} à l'institut SHUGAMADE.
 
 📍 ${isPointeNoireSession(formattedDate)
-          ? "Mpita, 2ême ruelle après Tatie-Louttar, en face de l'école bénédiction Pointe-Noire"
-          : "Bacongo, en face de l'école 5 Chemin, dans l'immeuble carrelé en marron."
+          ? "Mpita, 2eme ruelle après TATIE LOUTTAR, la ruelle en face de l'école bénédiction, Pointe-Noire."
+          : "Bacongo, en face de l'école 5 Chemin, dans l'immeuble carrelé en marron, Brazzaville."}
 }
 
 ✅ Préparation avant la séance :

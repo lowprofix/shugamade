@@ -6,7 +6,7 @@ export interface Location {
   id: number;
   name: string;
   address: string;
-  description: string;
+  description?: string;
 }
 
 export interface Service {
@@ -59,7 +59,6 @@ export const locations: Location[] = [
     id: 1,
     name: "Institut ShugaMade - BZV",
     address: "5 Chemins, Bacongo, Brazzaville, Congo",
-    description: "2eme ruelle après la station Afrique de l'avenue de France",
   },
   {
     id: 2,

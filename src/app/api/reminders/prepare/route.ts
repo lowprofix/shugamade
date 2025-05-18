@@ -8,30 +8,72 @@ import { fr } from "date-fns/locale";
 // Définir la constante TIMEZONE
 const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
 
+// Type pour valider la structure des rendez-vous
+interface Appointment {
+  description?: string;
+  summary?: string;
+  start?: {
+    dateTime?: string;
+  };
+}
+
+/**
+ * Valide la structure d'un rendez-vous
+ */
+function isValidAppointment(appointment: any): appointment is Appointment {
+  return (
+    appointment &&
+    typeof appointment === 'object' &&
+    (appointment.description === undefined || typeof appointment.description === 'string') &&
+    (appointment.summary === undefined || typeof appointment.summary === 'string') &&
+    (appointment.start === undefined || 
+      (typeof appointment.start === 'object' && 
+       (appointment.start.dateTime === undefined || typeof appointment.start.dateTime === 'string')))
+  );
+}
+
 /**
  * Route pour récupérer les rendez-vous de demain et préparer les rappels
  */
 export async function GET(request: NextRequest) {
   try {
-    // 1. Récupérer les rendez-vous du lendemain depuis le webhook n8n
+    // 1. Vérifier la configuration
     const webhookUrl = process.env.N8N_WEBHOOK_CALENDAR_EVENTS_TOMORROW;
-
     if (!webhookUrl) {
       console.error("URL du webhook n8n non configurée");
       return NextResponse.json(
-        { success: false, error: "Configuration incomplète" },
+        { 
+          success: false, 
+          error: "Configuration incomplète",
+          status: "CONFIG_ERROR" 
+        },
         { status: 500 }
       );
     }
 
-    const response = await fetch(webhookUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    // 2. Récupérer les rendez-vous
+    let response;
+    try {
+      response = await fetch(webhookUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (fetchError) {
+      console.error("Erreur lors de la requête au webhook:", fetchError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Erreur de connexion au service de calendrier",
+          status: "FETCH_ERROR",
+          details: fetchError instanceof Error ? fetchError.message : "Erreur inconnue"
+        },
+        { status: 503 }
+      );
+    }
 
-   // Gérer le cas où la réponse est vide (204 No Content)
+    // 3. Gérer les différents cas de réponse
     if (response.status === 204) {
       return NextResponse.json({
         success: true,
@@ -44,26 +86,47 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       console.error("Erreur lors de la récupération des rendez-vous:", response.status);
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: "Impossible de récupérer les rendez-vous",
-          status: "API_ERROR"
+          status: "API_ERROR",
+          httpStatus: response.status
         },
         { status: response.status }
       );
     }
 
-    // 2. Traiter les données des rendez-vous
-    const appointmentsData = await response.json();
-    const appointments = Array.isArray(appointmentsData)
-      ? appointmentsData
-      : appointmentsData.appointments || [];
+    // 4. Parser et valider la réponse JSON
+    let appointmentsData;
+    try {
+      appointmentsData = await response.json();
+    } catch (jsonError) {
+      console.error("Erreur lors du parsing JSON:", jsonError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Réponse invalide du service de calendrier",
+          status: "JSON_PARSE_ERROR",
+          details: jsonError instanceof Error ? jsonError.message : "Erreur de parsing JSON"
+        },
+        { status: 500 }
+      );
+    }
 
-    if (!appointments.length) {
+    // 5. Extraire et valider les rendez-vous
+    let appointments: Appointment[] = [];
+    if (Array.isArray(appointmentsData)) {
+      appointments = appointmentsData.filter(isValidAppointment);
+    } else if (appointmentsData && typeof appointmentsData === 'object' && Array.isArray(appointmentsData.appointments)) {
+      appointments = appointmentsData.appointments.filter(isValidAppointment);
+    }
+
+    if (appointments.length === 0) {
       return NextResponse.json({
         success: true,
-        message: "Aucun rendez-vous prévu pour demain",
+        message: "Aucun rendez-vous valide trouvé pour demain",
         count: 0,
+        status: "NO_VALID_APPOINTMENTS"
       });
     }
 

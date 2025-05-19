@@ -14,7 +14,8 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Sparkles, ShoppingCart, X, Info, Pill, Droplets } from "lucide-react";
-import { Product, products, contactInfo } from "@/lib/data";
+import { Product } from "@/lib/types";
+import { contactInfo } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 interface ProductsSectionProps {
@@ -92,53 +93,20 @@ export default function ProductsSection({
     setError(null);
 
     try {
-      const response = await fetch("/api/hiboutik/products");
+      const response = await fetch("/api/products");
 
       if (!response.ok) {
         throw new Error(
-          `Erreur lors de la récupération des stocks: ${response.status}`
+          `Erreur lors de la récupération des produits: ${response.status}`
         );
       }
 
       const data = await response.json();
-
-      // Combiner les produits locaux avec les données de stock de l'API
-      const updatedProducts = products.map((product) => {
-        // Chercher le produit correspondant dans les données de l'API
-        const hiboutikProduct = data.products.find(
-          (p: any) =>
-            p.product_model === product.name ||
-            p.product_id === product.hiboutikId
-        );
-
-        if (hiboutikProduct) {
-          // Calculer le stock total à partir des données de stock
-          let totalStock = 0;
-          if (hiboutikProduct.stock && Array.isArray(hiboutikProduct.stock)) {
-            totalStock = hiboutikProduct.stock.reduce(
-              (sum: number, stockItem: any) =>
-                sum + parseInt(stockItem.stock_available || 0, 10),
-              0
-            );
-          }
-
-          return {
-            ...product,
-            hiboutikId: hiboutikProduct.product_id,
-            stock: totalStock,
-            isAvailable: totalStock > 0,
-          };
-        }
-
-        return product;
-      });
-
-      setProductsWithStock(updatedProducts);
+      setProductsWithStock(data.products);
     } catch (error) {
-      console.error("Erreur lors de la récupération des stocks:", error);
-      setError("Impossible de récupérer les informations de stock");
-      // Utiliser les produits locaux sans informations de stock
-      setProductsWithStock(products);
+      console.error("Erreur lors de la récupération des produits:", error);
+      setError("Impossible de récupérer les informations des produits");
+      setProductsWithStock([]);
     } finally {
       setIsLoading(false);
     }
@@ -151,31 +119,15 @@ export default function ProductsSection({
 
   // Fonction modifiée pour utiliser les produits avec stock
   const getFilteredProducts = () => {
-    // Utiliser les produits avec stock si disponibles, sinon utiliser les produits locaux
-    const productsToFilter =
-      productsWithStock.length > 0 ? productsWithStock : products;
+    const productsToFilter = productsWithStock;
 
     if (selectedCategory === "all") {
       return productsToFilter;
     }
 
-    // Logique de filtrage existante
-    switch (selectedCategory) {
-      case "supplements":
-        return productsToFilter.filter(
-          (product) => product.category === "supplements"
-        );
-      case "oils":
-        return productsToFilter.filter(
-          (product) => product.category === "oils"
-        );
-      case "accessories":
-        return productsToFilter.filter(
-          (product) => product.category === "accessories"
-        );
-      default:
-        return productsToFilter;
-    }
+    return productsToFilter.filter(
+      (product) => product.category === selectedCategory
+    );
   };
 
   // Vérifier si un produit est dans le panier
@@ -320,14 +272,14 @@ export default function ProductsSection({
         )}
 
         {/* Grille de produits */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
           {getFilteredProducts().map((product) => (
             <ProductCard
               key={product.id}
               product={product}
               isSelected={isProductSelected(product.id)}
               onSelect={() => toggleProductSelection(product)}
-              className="animate-fade-in"
+              className="animate-fade-in h-full"
             />
           ))}
         </div>

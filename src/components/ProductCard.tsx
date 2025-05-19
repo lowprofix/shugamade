@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, ShoppingCart, X } from "lucide-react";
-import { Product } from "@/lib/data";
+import { Check, ShoppingCart, X, ImageOff, ChevronDown, ChevronUp } from "lucide-react";
+import { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
@@ -21,16 +21,18 @@ export function ProductCard({
   onSelect,
   className,
 }: ProductCardProps) {
+  const [imageError, setImageError] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <Card
       className={cn(
-        "group relative overflow-hidden border-none shadow-lg h-full",
+        "group relative overflow-hidden border-none shadow-lg",
         "transition-all duration-500 ease-out",
         "hover:shadow-xl hover:shadow-[#e2b3f7]/10 hover:-translate-y-1",
         isSelected ? "ring-2 ring-[#0072BB]" : "",
         className
       )}
-      onClick={onSelect}
     >
       {/* Badge "Sélectionné" */}
       {isSelected && (
@@ -63,30 +65,64 @@ export function ProductCard({
       )}
 
       {/* Image du produit */}
-      <div className="relative w-full aspect-square overflow-hidden bg-gradient-to-br from-[#e2b3f7]/5 to-[#bfe0fb]/5">
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          className={cn(
-            "object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:brightness-[1.03]",
-            product.stock === 0 && "opacity-70 grayscale"
-          )}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        />
+      <div className="relative aspect-square overflow-hidden">
+        {imageError ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+            <ImageOff className="w-12 h-12 text-gray-400" />
+          </div>
+        ) : (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className={cn(
+              "object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:brightness-[1.03]",
+              product.stock === 0 && "opacity-70 grayscale"
+            )}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            onError={() => setImageError(true)}
+          />
+        )}
       </div>
 
       {/* Contenu du produit */}
-      <div className="p-5 transition-all duration-500 group-hover:bg-gradient-to-br from-transparent to-[#e2b3f7]/5">
-        <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white">
+      <div className="p-4 flex flex-col min-h-[200px]">
+        <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white line-clamp-2">
           {product.name}
         </h3>
 
-        <div className="mb-4 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+        <div 
+          className={cn(
+            "text-sm text-gray-600 dark:text-gray-300",
+            !isExpanded && "line-clamp-3"
+          )}
+        >
           {product.description}
         </div>
 
-        <div className="flex items-center justify-between mt-auto">
+        {product.description.length > 150 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="text-[#0072BB] text-sm mt-2 flex items-center hover:underline"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-4 h-4 mr-1" />
+                Voir moins
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4 mr-1" />
+                Voir plus
+              </>
+            )}
+          </button>
+        )}
+
+        <div className="flex items-center justify-between mt-auto pt-4">
           <span className="text-lg font-bold bg-gradient-to-r from-[#e2b3f7] to-[#ffb2dd] bg-clip-text text-transparent">
             {product.price}
           </span>

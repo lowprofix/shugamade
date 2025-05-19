@@ -169,16 +169,8 @@ export async function GET() {
       )
       .length;
 
-    // 5. Retourner la réponse avec les statistiques de mise à jour
-    return NextResponse.json({
-      products: successfulUpdates,
-      metadata: {
-        total: products.length,
-        updated: successfulUpdates.length,
-        failed: failedUpdates,
-        stockFetchError: stockFetchError
-      }
-    });
+    // 5. Retourner directement le tableau des produits mis à jour
+    return NextResponse.json(successfulUpdates);
 
   } catch (error) {
     console.error('Exception GET produits:', error);

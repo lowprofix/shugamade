@@ -102,7 +102,7 @@ export default function ProductsSection({
       }
 
       const data = await response.json();
-      setProductsWithStock(data.products);
+      setProductsWithStock(data);
     } catch (error) {
       console.error("Erreur lors de la récupération des produits:", error);
       setError("Impossible de récupérer les informations des produits");

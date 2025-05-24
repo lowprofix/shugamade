@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
             `  - Mobile Money: +242 06 597 56 23\n` +
             `  - Airtel Money: +242 05 092 89 99\n\n` +
             `L'accompte sera bien entendu déduit du montant total de la prestation.\n\n` +
-            +`À très bientôt !\n\n` +
+            `À très bientôt !\n\n` +
             `Eunice – SHUGAMADE\n` +
             `📞 +242 06 597 56 23`;
 

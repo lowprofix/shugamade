@@ -94,7 +94,7 @@
     },
     {
       "parameters": {
-        "toolDescription": "Cette fonction permet de récupérer la liste complète des produits disponibles dans la boutique Shugamade directement depuis la base de données. Chaque produit contient les informations suivantes : Nom du produit, Description détaillée, Prix, Image, Catégorie (supplements, oils, accessories), Stock actuel (En stock, Stock limité, Épuisé), Statut de disponibilité, ID Hiboutik associé, Dates de création et mise à jour. NOUVEAU: Retourne maintenant des informations enrichies pour l'intégration WhatsApp (whatsapp_ready, image_available, can_send_whatsapp, display_price, stock_label) et un résumé des statistiques.",
+        "toolDescription": "Cette fonction permet de récupérer la liste complète des produits disponibles dans la boutique Shugamade directement depuis la base de données. Chaque produit contient les informations suivantes : Nom du produit, Description détaillée, Prix, Image, Catégorie (supplements, oils, accessories), Stock actuel (En stock, Stock limité, Épuisé), Statut de disponibilité, ID Hiboutik associé, Dates de création et mise à jour.",
         "url": "https://www.shugamade.com/api/products",
         "options": {}
       },
@@ -227,7 +227,7 @@
     },
     {
       "parameters": {
-        "toolDescription": "Envoyer plusieurs images de produits via WhatsApp avec délai entre chaque envoi. Cette fonction permet d'envoyer les images de plusieurs produits en séquence avec un délai configurable entre chaque envoi pour éviter le spam.",
+        "toolDescription": "Envoyer plusieurs images de produits via WhatsApp avec délai entre chaque envoi. Cette fonction permet d'envoyer les images de plusieurs produits en séquence avec un délai configurable entre chaque envoi pour éviter le spam. Chaque produit peut être identifié par son ID Supabase, hiboutik_id, ou nom.",
         "method": "POST",
         "url": "https://www.shugamade.com/api/whatsapp/media/multiple",
         "sendBody": true,
@@ -238,8 +238,8 @@
               "value": "={{ $fromAI('phoneNumber', 'Numéro de téléphone WhatsApp du destinataire (format international avec +)', 'string') }}"
             },
             {
-              "name": "productIds",
-              "value": "={{ JSON.parse($fromAI('productIds', 'Liste des IDs de produits à envoyer au format JSON string. Exemple: [27,28,29]', 'string')) }}"
+              "name": "productIdentifiers",
+              "value": "={{ JSON.parse($fromAI('productIdentifiers', 'Liste des identifiants de produits à envoyer au format JSON string. Peut contenir des IDs numériques, hiboutik_ids, ou noms. Exemple: [\"Dermaroller\", \"Spray coup de pep\\'s\", 27]', 'string')) }}"
             },
             {
               "name": "delayBetweenMessages",

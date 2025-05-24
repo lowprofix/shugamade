@@ -1,0 +1,409 @@
+{
+  "name": "MCP_Shugamade",
+  "nodes": [
+    {
+      "parameters": {
+        "toolDescription": "Obtenir les créneaux disponibles pour un lieu spécifique (Brazzaville ou Pointe-Noire). IMPORTANT: Utilisez la durée exacte selon le service demandé:\n\n• Séance Boost = 30 minutes\n• Diagnostic simple = 60 minutes\n• Diagnostic + protocole = 60 minutes\n• Hairneedling Tempes = 45 minutes\n• Hairneedling Tête = 60 minutes\n\nLes créneaux retournés sont filtrés selon les disponibilités du lieu choisi.\n\nexemple d'URL valable: https://www.shugamade.com/api/get-available-slots?date=2025-05-29&duration=60&locationId=1",
+        "url": "https://www.shugamade.com/api/get-available-slots",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $fromAI('date', 'Date de début au format YYYY-MM-DD (ex: 2024-03-20)', 'string') }}"
+            },
+            {
+              "name": "duration",
+              "value": "={{ $fromAI('duration', 'Durée exacte du service en minutes: Séance Boost=30, Diagnostic simple=60, Diagnostic + protocole=60, Hairneedling Tempes=45, Hairneedling Tête=60', 'number') }}"
+            },
+            {
+              "name": "locationId",
+              "value": "={{ $fromAI('locationId', 'ID du lieu: 1 pour Brazzaville, 2 pour Pointe-Noire', 'number') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        300
+      ],
+      "id": "b8d86965-f273-463b-8f01-04ddd809eccc",
+      "name": "available_slots"
+    },
+    {
+      "parameters": {
+        "path": "shugamade_mcp"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        60
+      ],
+      "id": "151053ef-4a97-4bca-aedd-bd064653e736",
+      "name": "MCP Server Trigger",
+      "webhookId": "7c5cf2ed-6fbb-4948-bba3-a0d8dfcbdc87"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Cette route API gère la création de réservations pour SHUGAMADE.",
+        "method": "POST",
+        "url": "=https://www.shugamade.com/api/create-booking",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $fromAI('title', 'nom du service réservé', 'string') }}"
+            },
+            {
+              "name": "start",
+              "value": "={{ $fromAI('start', 'Date/heure du début (ISO)', 'string') }}"
+            },
+            {
+              "name": "end",
+              "value": "={{ $fromAI('end', 'Date/heure de fin (ISO)', 'string') }}"
+            },
+            {
+              "name": "clientName",
+              "value": "={{ $fromAI('clientName', 'Nom complet du client', 'string') }}"
+            },
+            {
+              "name": "clientPhone",
+              "value": "={{ $fromAI('clientPhone', 'Numéro de téléphone du client', 'string') }}"
+            },
+            {
+              "name": "sendWhatsAppConfirmation",
+              "value": "=true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6379915c-f6eb-46e9-ab41-ada8b1c88046",
+      "name": "create_booking",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Cette fonction permet de récupérer la liste complète des produits disponibles dans la boutique Shugamade directement depuis la base de données. Chaque produit contient les informations suivantes : Nom du produit, Description détaillée, Prix, Image, Catégorie (supplements, oils, accessories), Stock actuel (En stock, Stock limité, Épuisé), Statut de disponibilité, ID Hiboutik associé, Dates de création et mise à jour. NOUVEAU: Retourne maintenant des informations enrichies pour l'intégration WhatsApp (whatsapp_ready, image_available, can_send_whatsapp, display_price, stock_label) et un résumé des statistiques.",
+        "url": "https://www.shugamade.com/api/products",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        540,
+        300
+      ],
+      "id": "6a226c9d-87a5-4dfd-aeb8-08cd1de8c64c",
+      "name": "get_products"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Mettre à jour les informations d'un client existant dans Hiboutik.",
+        "method": "PATCH",
+        "url": "=https://www.shugamade.com/api/hiboutik/clients/{{ $fromAI('clientId', 'ID du client dans Hiboutik', 'string') }}/update",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "customers_attribute",
+              "value": "={{ $fromAI('attribute', 'Attribut à modifier (customers_first_name, customers_last_name, customers_phone_number, customers_email)', 'string') }}"
+            },
+            {
+              "name": "new_value",
+              "value": "={{ $fromAI('value', 'Nouvelle valeur pour l\\'attribut', 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "75242b6b-7d3d-493d-bca8-546ac0562d3a",
+      "name": "update_hiboutik_client",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        20,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Créer un nouveau client dans la base de données Hiboutik.",
+        "method": "POST",
+        "url": "=https://www.shugamade.com/api/hiboutik/clients",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "customers_first_name",
+              "value": "={{ $fromAI('firstName', 'Prénom du client', 'string') }}"
+            },
+            {
+              "name": "customers_last_name",
+              "value": "={{ $fromAI('lastName', 'Nom de famille du client', 'string') }}"
+            },
+            {
+              "name": "customers_phone_number",
+              "value": "={{ $fromAI('phone', 'Numéro de téléphone du client', 'string') }}"
+            },
+            {
+              "name": "customers_email",
+              "value": "={{ $fromAI('email', 'Email du client (optionnel)', 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "53807a5c-b230-433a-9f14-7bfceefa5ab7",
+      "name": "create_hiboutik_client",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Rechercher un client dans la base de données Hiboutik. Permet de vérifier si un client existe déjà.",
+        "url": "=https://www.shugamade.com/api/hiboutik/clients/search?phone={{ $fromAI('phone', 'Numéro de téléphone du client à rechercher', 'string') }}",
+        "options": {}
+      },
+      "id": "b1c57af2-ddc9-40ac-b591-fd998273b5a8",
+      "name": "search_hiboutik_client",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Envoyer l'image d'un produit via WhatsApp. Cette fonction permet d'envoyer automatiquement l'image d'un produit spécifique avec une caption enrichie contenant le nom, la description, le prix, le stock et la catégorie du produit. L'image est récupérée depuis la base de données Supabase et envoyée via l'API Evolution WhatsApp. Le produit peut être identifié par son ID Supabase, son hiboutik_id, ou son nom.",
+        "method": "POST",
+        "url": "https://www.shugamade.com/api/whatsapp/media",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phoneNumber",
+              "value": "={{ $fromAI('phoneNumber', 'Numéro de téléphone WhatsApp du destinataire (format international avec +)', 'string') }}"
+            },
+            {
+              "name": "productIdentifier",
+              "value": "={{ $fromAI('productIdentifier', 'Identifiant du produit : peut être l\\'ID Supabase, hiboutik_id (numérique), ou nom du produit (string). Exemples: 27, \"Dermaroller 0,5mm\", \"Spray coup de pep\\'s\"', 'string') }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $fromAI('caption', 'Caption personnalisée pour l\\'image (optionnel, si non fourni une caption automatique sera générée)', 'string') }}"
+            },
+            {
+              "name": "delay",
+              "value": "={{ $fromAI('delay', 'Délai en millisecondes avant l\\'envoi (optionnel, défaut: 1000)', 'number') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f9a2b3c-4d5e-6f7g-8h9i-0j1k2l3m4n5o",
+      "name": "send_product_image_whatsapp",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Envoyer plusieurs images de produits via WhatsApp avec délai entre chaque envoi. Cette fonction permet d'envoyer les images de plusieurs produits en séquence avec un délai configurable entre chaque envoi pour éviter le spam.",
+        "method": "POST",
+        "url": "https://www.shugamade.com/api/whatsapp/media/multiple",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phoneNumber",
+              "value": "={{ $fromAI('phoneNumber', 'Numéro de téléphone WhatsApp du destinataire (format international avec +)', 'string') }}"
+            },
+            {
+              "name": "productIds",
+              "value": "={{ JSON.parse($fromAI('productIds', 'Liste des IDs de produits à envoyer au format JSON string. Exemple: [27,28,29]', 'string')) }}"
+            },
+            {
+              "name": "delayBetweenMessages",
+              "value": "={{ $fromAI('delayBetweenMessages', 'Délai en millisecondes entre chaque envoi (optionnel, défaut: 2000)', 'number') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9g8h7i6j-5k4l-3m2n-1o0p-9q8r7s6t5u4v",
+      "name": "send_multiple_product_images_whatsapp",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Rechercher et envoyer des images de produits par critères via WhatsApp. Cette fonction permet de rechercher des produits selon des critères spécifiques (nom, catégorie, prix, stock) et d'envoyer automatiquement leurs images via WhatsApp.",
+        "method": "POST",
+        "url": "https://www.shugamade.com/api/whatsapp/media/search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phoneNumber",
+              "value": "={{ $fromAI('phoneNumber', 'Numéro de téléphone WhatsApp du destinataire (format international avec +)', 'string') }}"
+            },
+            {
+              "name": "searchCriteria",
+              "value": "={{ JSON.parse($fromAI('searchCriteria', 'Critères de recherche au format JSON string. Exemple: {\"name\":\"spray\",\"category\":\"supplements\",\"priceMin\":10,\"priceMax\":50,\"inStock\":true,\"isAvailable\":true}', 'string')) }}"
+            },
+            {
+              "name": "maxResults",
+              "value": "={{ $fromAI('maxResults', 'Nombre maximum de résultats à envoyer (optionnel, défaut: 5)', 'number') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7f6e5d4c-3b2a-1098-7654-3210fedcba98",
+      "name": "search_and_send_product_images_whatsapp",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        1020,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "available_slots": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_products": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_hiboutik_client": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_hiboutik_client": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_hiboutik_client": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_product_image_whatsapp": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send_multiple_product_images_whatsapp": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_and_send_product_images_whatsapp": {
+      "ai_tool": [
+        [
+          {
+            "node": "MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "versionId": "312369bb-7e04-402a-95cd-62c2a49db832",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e069e3e0b485d3f7c02fbfcc42c37875c5218f463fcc423bbca70b5c557b5ffd"
+  },
+  "id": "L3dEy3LoO9b1PkZc",
+  "tags": []
+}

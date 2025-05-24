@@ -169,8 +169,37 @@ export async function GET() {
       )
       .length;
 
-    // 5. Retourner directement le tableau des produits mis à jour
-    return NextResponse.json(successfulUpdates);
+    // 5. Enrichir les données pour l'intégration WhatsApp et retourner
+    const enrichedProducts = successfulUpdates.map(product => ({
+      ...product,
+      // Informations pour l'intégration WhatsApp
+      whatsapp_ready: !!(product.image && product.is_available),
+      image_available: !!product.image,
+      stock_status: product.stock > 0 ? 'in_stock' : 'out_of_stock',
+      // Métadonnées utiles
+      can_send_whatsapp: !!(product.image && product.is_available && product.stock > 0),
+      display_price: product.price ? `${product.price}€` : 'Prix non disponible',
+      stock_label: product.stock > 0 ? `${product.stock} en stock` : 'Rupture de stock'
+    }));
+
+    return NextResponse.json({
+      products: enrichedProducts,
+      summary: {
+        total: enrichedProducts.length,
+        with_images: enrichedProducts.filter(p => p.image_available).length,
+        whatsapp_ready: enrichedProducts.filter(p => p.whatsapp_ready).length,
+        in_stock: enrichedProducts.filter(p => p.stock > 0).length,
+        available: enrichedProducts.filter(p => p.is_available).length
+      },
+      whatsapp_integration: {
+        endpoint: "/api/whatsapp/media",
+        methods: {
+          single: "POST /api/whatsapp/media",
+          multiple: "POST /api/whatsapp/media/multiple", 
+          search: "POST /api/whatsapp/media/search"
+        }
+      }
+    });
 
   } catch (error) {
     console.error('Exception GET produits:', error);

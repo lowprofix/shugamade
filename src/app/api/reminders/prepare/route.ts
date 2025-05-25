@@ -14,6 +14,7 @@ interface Appointment {
   summary?: string;
   start?: {
     dateTime?: string;
+    date?: string;
   };
 }
 
@@ -28,8 +29,46 @@ function isValidAppointment(appointment: any): appointment is Appointment {
     (appointment.summary === undefined || typeof appointment.summary === 'string') &&
     (appointment.start === undefined || 
       (typeof appointment.start === 'object' && 
-       (appointment.start.dateTime === undefined || typeof appointment.start.dateTime === 'string')))
+       (appointment.start.dateTime === undefined || typeof appointment.start.dateTime === 'string') &&
+       (appointment.start.date === undefined || typeof appointment.start.date === 'string')))
   );
+}
+
+/**
+ * Détermine si un événement est un vrai rendez-vous client
+ * Filtre les événements de blocage, les événements sur plusieurs jours, etc.
+ */
+function isClientAppointment(appointment: Appointment): boolean {
+  // Exclure les événements sans résumé
+  if (!appointment.summary) {
+    return false;
+  }
+
+  const summary = appointment.summary.toLowerCase().trim();
+
+  // Exclure les événements de blocage connus
+  const blockingEvents = ['pnr', 'pointe-noire', 'repos', 'congé', 'fermeture', 'fermé'];
+  if (blockingEvents.some(keyword => summary.includes(keyword))) {
+    console.log(`Événement de blocage détecté et exclu: ${appointment.summary}`);
+    return false;
+  }
+
+  // Exclure les événements sur plusieurs jours (qui ont start.date au lieu de start.dateTime)
+  if (appointment.start && appointment.start.date && !appointment.start.dateTime) {
+    console.log(`Événement sur plusieurs jours exclu: ${appointment.summary}`);
+    return false;
+  }
+
+  // Exclure les événements sans heure précise
+  if (!appointment.start?.dateTime) {
+    console.log(`Événement sans heure précise exclu: ${appointment.summary}`);
+    return false;
+  }
+
+  // Les vrais rendez-vous clients ont généralement une description avec des informations de contact
+  // Mais on ne filtre pas sur ce critère ici car certains clients pourraient ne pas avoir de description
+  
+  return true;
 }
 
 /**
@@ -121,12 +160,19 @@ export async function GET(request: NextRequest) {
       appointments = appointmentsData.appointments.filter(isValidAppointment);
     }
 
-    if (appointments.length === 0) {
+    console.log(`${appointments.length} événements trouvés au total`);
+
+    // Filtrer pour ne garder que les vrais rendez-vous clients
+    const clientAppointments = appointments.filter(isClientAppointment);
+    console.log(`${clientAppointments.length} vrais rendez-vous clients après filtrage`);
+
+    if (clientAppointments.length === 0) {
       return NextResponse.json({
         success: true,
-        message: "Aucun rendez-vous valide trouvé pour demain",
+        message: "Aucun rendez-vous client trouvé pour demain",
         count: 0,
-        status: "NO_VALID_APPOINTMENTS"
+        status: "NO_CLIENT_APPOINTMENTS",
+        details: `${appointments.length} événements trouvés mais aucun rendez-vous client valide`
       });
     }
 
@@ -144,7 +190,7 @@ export async function GET(request: NextRequest) {
       .from("reminder_sessions")
       .insert({
         session_date: tomorrow.toISOString().split("T")[0],
-        total_clients: appointments.length,
+        total_clients: clientAppointments.length,
       })
       .select()
       .single();
@@ -165,7 +211,7 @@ export async function GET(request: NextRequest) {
     const clientsForDb = [];
     const clientsWithErrors = [];
 
-    for (const appointment of appointments) {
+    for (const appointment of clientAppointments) {
       try {
         // Extraire le numéro de téléphone depuis le champ description
         const phoneFromDescription = extractPhoneNumber(
@@ -296,14 +342,23 @@ Eunice – Institut SHUGAMADE
         errors: clientsWithErrors.length > 0 ? clientsWithErrors : undefined,
       });
     } else {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Aucun client valide trouvé pour l'envoi des rappels.",
-          errors: clientsWithErrors,
-        },
-        { status: 400 }
-      );
+      // Aucun client valide trouvé - c'est normal pour les jours de repos
+      console.log(`Aucun client valide trouvé. ${clientsWithErrors.length} événements avec erreurs.`);
+      
+      // Supprimer la session créée car elle n'est pas nécessaire
+      await supabase
+        .from("reminder_sessions")
+        .delete()
+        .eq("id", sessionData.id);
+
+      return NextResponse.json({
+        success: true,
+        message: "Aucun client valide trouvé pour l'envoi des rappels.",
+        count: 0,
+        status: "NO_VALID_CLIENTS",
+        details: `${clientAppointments.length} rendez-vous clients trouvés mais aucun avec des informations valides`,
+        errors: clientsWithErrors.length > 0 ? clientsWithErrors : undefined,
+      });
     }
   } catch (error) {
     console.error("Erreur lors de la préparation des rappels:", error);

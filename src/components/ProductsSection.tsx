@@ -102,7 +102,15 @@ export default function ProductsSection({
       }
 
       const data = await response.json();
-      setProductsWithStock(data);
+      
+      // L'API retourne un objet avec une propriété 'products' qui contient le tableau
+      if (data && Array.isArray(data.products)) {
+        setProductsWithStock(data.products);
+      } else {
+        console.error("Format de réponse inattendu:", data);
+        setError("Format de données invalide");
+        setProductsWithStock([]);
+      }
     } catch (error) {
       console.error("Erreur lors de la récupération des produits:", error);
       setError("Impossible de récupérer les informations des produits");
@@ -119,6 +127,12 @@ export default function ProductsSection({
 
   // Fonction modifiée pour utiliser les produits avec stock
   const getFilteredProducts = () => {
+    // S'assurer que productsWithStock est un tableau
+    if (!Array.isArray(productsWithStock)) {
+      console.warn("productsWithStock n'est pas un tableau:", productsWithStock);
+      return [];
+    }
+
     const productsToFilter = productsWithStock;
 
     if (selectedCategory === "all") {

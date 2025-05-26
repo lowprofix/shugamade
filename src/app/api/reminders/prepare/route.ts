@@ -256,29 +256,25 @@ export async function GET(request: NextRequest) {
         }
 
         // Message personnalisé pour le rappel
-        const message = `Bonjour ${nameFromSummary},
-Nous vous rappelons votre rendez-vous "${serviceName}" pour demain ${formattedDate} à ${appointmentTime} à l'institut SHUGAMADE.
+        const message = `Bonsoir,
 
+Nous vous rappelons votre rendez-vous pour la séance de ${serviceName} à l'institut SHUGAMADE :
+
+🗓️ ${formattedDate} à ${appointmentTime}
 📍 ${isPointeNoireSession(formattedDate)
-          ? "Mpita, 2eme ruelle après TATIE LOUTTAR, la ruelle en face de l'école bénédiction, Pointe-Noire."
-          : "Bacongo, en face de l'école 5 Chemin, dans l'immeuble carrelé en marron, Brazzaville."}
-}
+          ? "Mpita, 2eme ruelle après TATIE LOUTTAR, la ruelle en face de l'école bénédiction, Pointe-Noire"
+          : "En face de l'école 5 chemin à Bacongo, immeuble carrelé en marron"
+        }
 
-✅ Préparation avant la séance :
-* Veillez à ce que vos cheveux soient propres et sans produit.
+Merci de laver vos cheveux au moins 48h avant la séance.
 
-Merci de bien vouloir confirmer votre présence afin que votre créneau soit maintenu.
+En cas d'absence sans annulation au moins 24h à l'avance, un acompte de 5 000 FCFA sera retenu.
 
-⚠️ Informations importantes :
-* Un retard de plus de 30 minutes entraînera l'annulation de la séance.
-* Toute annulation doit être signalée au moins 24h à l'avance.
-* Sans annulation dans les délais, l'acompte ne pourra pas être remboursé.
-
-Pour toute question ou information complémentaire, n'hésitez pas à me contacter.
+Pour toute question, n'hésitez pas à nous contacter :
+📞 00 242 06 597 56 23
 
 À bientôt,
-Eunice – Institut SHUGAMADE
-📞 +242 06 597 56 23`;
+Eunice – Institut SHUGAMADE`;
 
         // Ajouter le client à la liste pour insertion en base de données
         clientsForDb.push({

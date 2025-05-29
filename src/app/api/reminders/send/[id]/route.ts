@@ -47,8 +47,9 @@ import { supabase } from "@/lib/supabase/client";
       });
     }
 
-    // 2. Envoyer le message WhatsApp
+    // 2. Envoyer le message WhatsApp via l'API officielle
     const baseUrl =
+      process.env.NEXTAUTH_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
       `https://${request.headers.get("host")}`;
 
@@ -56,7 +57,7 @@ import { supabase } from "@/lib/supabase/client";
       `Envoi du message à ${client.client_name} (${client.phone_number})`
     );
 
-    const whatsappResponse = await fetch(`${baseUrl}/api/whatsapp`, {
+    const whatsappResponse = await fetch(`${baseUrl}/api/whatsapp/verify-and-send`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -64,6 +65,7 @@ import { supabase } from "@/lib/supabase/client";
       body: JSON.stringify({
         phoneNumber: client.phone_number,
         message: client.message,
+        cacheResult: true, // Utiliser le cache pour optimiser
       }),
     });
 
@@ -73,19 +75,29 @@ import { supabase } from "@/lib/supabase/client";
     const now = new Date().toISOString();
     let updateData = {};
 
-    if (whatsappResult.success) {
+    // L'API officielle retourne success, hasWhatsApp et messageDelivered
+    if (whatsappResult.success && whatsappResult.messageDelivered) {
       console.log(`✅ Message envoyé avec succès à ${client.client_name}`);
       updateData = {
         status: "sent",
         processed_at: now,
       };
     } else {
+      // Déterminer le type d'erreur
+      let errorMessage = whatsappResult.error || "Erreur d'envoi WhatsApp";
+      
+      if (whatsappResult.hasWhatsApp === false) {
+        errorMessage = "Numéro non enregistré sur WhatsApp";
+      } else if (whatsappResult.hasWhatsApp === "unknown") {
+        errorMessage = "Impossible de vérifier le statut WhatsApp";
+      }
+
       console.error(
-        `❌ Échec d'envoi du message à ${client.client_name}: ${whatsappResult.error}`
+        `❌ Échec d'envoi du message à ${client.client_name}: ${errorMessage}`
       );
       updateData = {
         status: "error",
-        error_message: whatsappResult.error || "Erreur d'envoi WhatsApp",
+        error_message: errorMessage,
         processed_at: now,
       };
     }
@@ -109,10 +121,10 @@ import { supabase } from "@/lib/supabase/client";
 
     if (sessionData) {
       const processedCount = (sessionData.processed_clients || 0) + 1;
-      const successCount = whatsappResult.success
+      const successCount = (whatsappResult.success && whatsappResult.messageDelivered)
         ? (sessionData.success_count || 0) + 1
         : sessionData.success_count || 0;
-      const errorCount = !whatsappResult.success
+      const errorCount = !(whatsappResult.success && whatsappResult.messageDelivered)
         ? (sessionData.error_count || 0) + 1
         : sessionData.error_count || 0;
 
@@ -135,8 +147,8 @@ import { supabase } from "@/lib/supabase/client";
 
     // 5. Renvoyer le résultat
     return NextResponse.json({
-      success: whatsappResult.success,
-      message: whatsappResult.success
+      success: whatsappResult.success && whatsappResult.messageDelivered,
+      message: (whatsappResult.success && whatsappResult.messageDelivered)
         ? "Message envoyé avec succès"
         : "Échec de l'envoi du message",
       client: {

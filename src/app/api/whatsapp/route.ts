@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Fonction pour formater correctement les numéros de téléphone internationaux
- * Gère les cas spécifiques par pays, notamment le 0 initial après l'indicatif pays
+ * Fonction pour formater correctement les numéros de téléphone pour l'API officielle WhatsApp
+ * L'API officielle WhatsApp Business recommande fortement d'inclure le + et le code pays
  */
 function formatPhoneNumber(phoneNumber: string): string {
-  // Supprimer tous les espaces
-  let formattedNumber = phoneNumber.replace(/\s+/g, "");
+  // Supprimer tous les espaces et caractères spéciaux sauf le +
+  let formattedNumber = phoneNumber.replace(/[\s\-\(\)]/g, "");
 
-  // S'assurer que le numéro commence par un +
+  // S'assurer que le numéro commence par + (recommandé par la documentation officielle)
   if (!formattedNumber.startsWith("+")) {
-    formattedNumber = `+${formattedNumber}`;
+    formattedNumber = "+" + formattedNumber;
   }
 
   // Liste des pays qui utilisent un 0 comme indicateur national qui doit être supprimé
-  // dans un format international (la clé est l'indicatif du pays)
   const countriesWithLeadingZero = [
     "+33", // France
     "+44", // Royaume-Uni
@@ -36,7 +35,7 @@ function formatPhoneNumber(phoneNumber: string): string {
         formattedNumber = `${countryCode}${formattedNumber.substring(
           countryCode.length + 1
         )}`;
-        break; // Sortir de la boucle une fois le traitement effectué
+        break;
       }
     }
   }
@@ -45,92 +44,22 @@ function formatPhoneNumber(phoneNumber: string): string {
 }
 
 /**
- * Vérifie si un numéro est enregistré sur WhatsApp
- * @param phoneNumber Numéro de téléphone à vérifier
- * @returns true si le numéro est enregistré sur WhatsApp, false sinon
- */
-async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
-  try {
-    // Configuration de l'API Evolution depuis les variables d'environnement
-    const serverUrl = process.env.EVOLUTION_API_SERVER;
-    const instanceName = process.env.EVOLUTION_API_INSTANCE;
-    const apiKey = process.env.EVOLUTION_API_KEY;
-
-    // Vérifier que les variables d'environnement sont définies
-    if (!serverUrl || !instanceName || !apiKey) {
-      console.error(
-        "Variables d'environnement WhatsApp manquantes pour la vérification de numéro"
-      );
-      return false;
-    }
-
-    // Formater le numéro de téléphone
-    const formattedNumber = formatPhoneNumber(phoneNumber);
-
-    // Appel à l'API Evolution pour vérifier si le numéro est enregistré sur WhatsApp
-    const response = await fetch(
-      `${serverUrl}/chat/whatsappNumbers/${instanceName}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: apiKey,
-        },
-        body: JSON.stringify({
-          numbers: [formattedNumber],
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      console.error("Erreur lors de la vérification du numéro WhatsApp");
-      return false;
-    }
-
-    const data = await response.json();
-
-    // Vérifier si le numéro est dans la liste des numéros WhatsApp
-    // La structure de réponse dépend de l'API Evolution, ajuster si nécessaire
-    if (data && Array.isArray(data) && data.length > 0) {
-      // Chercher si le numéro spécifique est valide
-      const numberResult = data.find(
-        (item) =>
-          item.number === formattedNumber ||
-          item.jid?.includes(formattedNumber.substring(1))
-      );
-      if (numberResult && numberResult.exists === true) {
-        console.log(`Le numéro ${formattedNumber} est enregistré sur WhatsApp`);
-        return true;
-      }
-    }
-
-    console.log(
-      `Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`
-    );
-    return false;
-  } catch (error) {
-    console.error("Erreur lors de la vérification du numéro WhatsApp:", error);
-    return false;
-  }
-}
-
-/**
- * API pour envoyer des messages WhatsApp via EvolutionAPI
+ * API pour envoyer des messages WhatsApp via l'API officielle WhatsApp Business
  */
 export async function POST(request: NextRequest) {
   try {
-    // Configuration de l'API Evolution depuis les variables d'environnement
-    const serverUrl = process.env.EVOLUTION_API_SERVER;
-    const instanceName = process.env.EVOLUTION_API_INSTANCE;
-    const apiKey = process.env.EVOLUTION_API_KEY;
+    // Configuration de l'API officielle WhatsApp Business
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
 
     // Vérifier que les variables d'environnement sont définies
-    if (!serverUrl || !instanceName || !apiKey) {
-      console.error("Variables d'environnement WhatsApp manquantes");
+    if (!phoneNumberId || !accessToken) {
+      console.error("Variables d'environnement WhatsApp Business manquantes");
       return NextResponse.json(
         {
           success: false,
-          error: "Configuration serveur incomplète",
+          error: "Configuration serveur incomplète. WHATSAPP_PHONE_NUMBER_ID et WHATSAPP_ACCESS_TOKEN sont requis.",
         },
         { status: 500 }
       );
@@ -151,57 +80,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Utiliser la nouvelle fonction de formatage de numéro de téléphone
+    // Formater le numéro de téléphone pour l'API officielle
     const phoneNumber = formatPhoneNumber(data.phoneNumber);
 
-    // Vérifier si le numéro est enregistré sur WhatsApp
-    const isWhatsApp = await isWhatsAppNumber(phoneNumber);
-    if (!isWhatsApp) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Le numéro n'est pas enregistré sur WhatsApp",
-          whatsapp: false,
-          phoneNumber: phoneNumber,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Construction du payload pour EvolutionAPI
+    // Construction du payload pour l'API officielle WhatsApp Business
     const payload = {
-      number: phoneNumber,
-      text: data.message,
-      // Options supplémentaires
-      delay: data.delay || 1000, // délai par défaut de 1 seconde
-      linkPreview: data.linkPreview !== undefined ? data.linkPreview : true,
+      messaging_product: "whatsapp",
+      recipient_type: "individual", // Recommandé par la documentation officielle
+      to: phoneNumber,
+      type: "text",
+      text: {
+        body: data.message,
+        preview_url: data.linkPreview !== undefined ? data.linkPreview : true,
+      },
     };
 
-    console.log("Envoi de message WhatsApp:", payload);
+    console.log("Envoi de message WhatsApp via API officielle:", {
+      to: phoneNumber,
+      message: data.message.substring(0, 50) + (data.message.length > 50 ? "..." : ""),
+    });
 
-    // Appel à l'API Evolution
-    const response = await fetch(
-      `${serverUrl}/message/sendText/${instanceName}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: apiKey,
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+    // URL de l'API officielle WhatsApp Business
+    const apiUrl = `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`;
+
+    // Appel à l'API officielle WhatsApp Business
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
     // Vérifier la réponse
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorData = await response.json().catch(() => null);
+      const errorText = errorData ? JSON.stringify(errorData) : await response.text();
       console.error("Erreur lors de l'envoi du message WhatsApp:", errorText);
 
       return NextResponse.json(
         {
           success: false,
           error: "Échec de l'envoi du message WhatsApp",
-          details: errorText,
+          details: errorData || errorText,
+          statusCode: response.status,
         },
         { status: response.status }
       );
@@ -214,7 +137,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Message WhatsApp envoyé avec succès",
       data: responseData,
+      phoneNumber: phoneNumber,
+      businessAccountId: businessAccountId,
     });
+
   } catch (error) {
     console.error("Erreur lors de l'envoi du message WhatsApp:", error);
 

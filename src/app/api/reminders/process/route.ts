@@ -135,6 +135,9 @@ async function processSession(
 
     const statusResult = await statusResponse.json();
 
+    // Envoie un résumé compact des rappels à un numéro de supervision
+    await sendSummaryToSupervisor(statusResult.session, statusResult.statistics, request);
+
     return NextResponse.json({
       success: true,
       completed: true,
@@ -220,4 +223,57 @@ async function processSession(
       batch_size: batchSize,
     },
   });
+}
+
+/**
+ * Envoie un résumé compact des rappels à un numéro de supervision
+ */
+async function sendSummaryToSupervisor(sessionData: any, statistics: any, request: NextRequest) {
+  try {
+    const supervisorNumber = process.env.WHATSAPP_SUPERVISOR_NUMBER;
+    if (!supervisorNumber) {
+      console.log("Numéro de supervision non configuré, pas d'envoi de résumé");
+      return;
+    }
+
+    const baseUrl = process.env.NEXTAUTH_URL || 
+                   process.env.NEXT_PUBLIC_APP_URL || 
+                   `https://${request.headers.get("host")}`;
+
+    // Créer le message de résumé compact
+    const summary = `📊 RÉSUMÉ RAPPELS - ${sessionData.session_date}
+
+✅ Envoyés: ${statistics.sent}
+❌ Échecs: ${statistics.error}  
+⏳ En attente: ${statistics.pending}
+📊 Total: ${sessionData.total_clients}
+
+Statut: ${sessionData.status === 'completed' ? '✅ Terminé' : '🔄 En cours'}
+
+🕐 ${new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Lagos' })}`;
+
+    console.log("Envoi du résumé au superviseur:", supervisorNumber);
+
+    const response = await fetch(`${baseUrl}/api/whatsapp/verify-and-send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        phoneNumber: supervisorNumber,
+        message: summary,
+        cacheResult: true,
+      }),
+    });
+
+    const result = await response.json();
+    
+    if (result.success && result.messageDelivered) {
+      console.log("✅ Résumé envoyé avec succès au superviseur");
+    } else {
+      console.error("❌ Échec d'envoi du résumé:", result.error);
+    }
+  } catch (error) {
+    console.error("Erreur lors de l'envoi du résumé:", error);
+  }
 }

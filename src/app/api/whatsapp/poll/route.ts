@@ -1,42 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
+ * Interface pour la requête d'envoi de sondage
+ */
+interface PollRequest {
+  phoneNumber: string;
+  name: string;
+  selectableCount: number;
+  values: string[];
+  delay?: number;
+  linkPreview?: boolean;
+  mentionsEveryOne?: boolean;
+  mentioned?: string[];
+  quoted?: {
+    key: {
+      id: string;
+    };
+    message: {
+      conversation: string;
+    };
+  };
+}
+
+/**
  * Fonction pour formater correctement les numéros de téléphone internationaux
- * Gère les cas spécifiques par pays, notamment le 0 initial après l'indicatif pays
  */
 function formatPhoneNumber(phoneNumber: string): string {
-  // Supprimer tous les espaces
   let formattedNumber = phoneNumber.replace(/\s+/g, "");
 
-  // S'assurer que le numéro commence par un +
   if (!formattedNumber.startsWith("+")) {
     formattedNumber = `+${formattedNumber}`;
   }
 
-  // Liste des pays qui utilisent un 0 comme indicateur national qui doit être supprimé
-  // dans un format international (la clé est l'indicatif du pays)
   const countriesWithLeadingZero = [
-    "+33", // France
-    "+44", // Royaume-Uni
-    "+39", // Italie
-    "+34", // Espagne
-    "+49", // Allemagne
-    "+32", // Belgique
-    "+31", // Pays-Bas
+    "+33", "+44", "+39", "+34", "+49", "+32", "+31",
   ];
 
-  // Vérifier si le numéro correspond à l'un des pays listés
   for (const countryCode of countriesWithLeadingZero) {
     if (
       formattedNumber.startsWith(countryCode) &&
       formattedNumber.length > countryCode.length
     ) {
-      // Si le caractère après l'indicatif pays est un 0, le supprimer
       if (formattedNumber.charAt(countryCode.length) === "0") {
         formattedNumber = `${countryCode}${formattedNumber.substring(
           countryCode.length + 1
         )}`;
-        break; // Sortir de la boucle une fois le traitement effectué
+        break;
       }
     }
   }
@@ -46,28 +55,20 @@ function formatPhoneNumber(phoneNumber: string): string {
 
 /**
  * Vérifie si un numéro est enregistré sur WhatsApp
- * @param phoneNumber Numéro de téléphone à vérifier
- * @returns true si le numéro est enregistré sur WhatsApp, false sinon
  */
 async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
   try {
-    // Configuration de l'API Evolution depuis les variables d'environnement
     const serverUrl = process.env.EVOLUTION_API_SERVER;
     const instanceName = process.env.EVOLUTION_API_INSTANCE;
     const apiKey = process.env.EVOLUTION_API_KEY;
 
-    // Vérifier que les variables d'environnement sont définies
     if (!serverUrl || !instanceName || !apiKey) {
-      console.error(
-        "Variables d'environnement WhatsApp manquantes pour la vérification de numéro"
-      );
+      console.error("Variables d'environnement WhatsApp manquantes pour la vérification de numéro");
       return false;
     }
 
-    // Formater le numéro de téléphone
     const formattedNumber = formatPhoneNumber(phoneNumber);
 
-    // Appel à l'API Evolution pour vérifier si le numéro est enregistré sur WhatsApp
     const response = await fetch(
       `${serverUrl}/chat/whatsappNumbers/${instanceName}`,
       {
@@ -89,10 +90,7 @@ async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
 
     const data = await response.json();
 
-    // Vérifier si le numéro est dans la liste des numéros WhatsApp
-    // La structure de réponse dépend de l'API Evolution, ajuster si nécessaire
     if (data && Array.isArray(data) && data.length > 0) {
-      // Chercher si le numéro spécifique est valide
       const numberResult = data.find(
         (item) =>
           item.number === formattedNumber ||
@@ -104,9 +102,7 @@ async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
       }
     }
 
-    console.log(
-      `Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`
-    );
+    console.log(`Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`);
     return false;
   } catch (error) {
     console.error("Erreur lors de la vérification du numéro WhatsApp:", error);
@@ -115,16 +111,71 @@ async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
 }
 
 /**
- * API pour envoyer des messages WhatsApp via EvolutionAPI
+ * Valide la structure du sondage
+ */
+function validatePoll(data: PollRequest): { isValid: boolean; error?: string } {
+  if (!data.name || typeof data.name !== 'string') {
+    return { isValid: false, error: "Le nom du sondage est requis et doit être une chaîne de caractères" };
+  }
+
+  if (data.name.length > 60) {
+    return { isValid: false, error: "Le nom du sondage ne peut pas dépasser 60 caractères" };
+  }
+
+  if (!Array.isArray(data.values) || data.values.length === 0) {
+    return { isValid: false, error: "Au moins une option doit être fournie" };
+  }
+
+  if (data.values.length > 12) {
+    return { isValid: false, error: "Maximum 12 options autorisées par WhatsApp" };
+  }
+
+  // Vérifier que chaque option est valide
+  for (let i = 0; i < data.values.length; i++) {
+    const option = data.values[i];
+    if (!option || typeof option !== 'string') {
+      return { 
+        isValid: false, 
+        error: `L'option ${i + 1} doit être une chaîne de caractères non vide` 
+      };
+    }
+
+    if (option.length > 100) {
+      return { 
+        isValid: false, 
+        error: `L'option ${i + 1} ne peut pas dépasser 100 caractères` 
+      };
+    }
+  }
+
+  // Vérifier que les options sont uniques
+  const uniqueOptions = new Set(data.values);
+  if (data.values.length !== uniqueOptions.size) {
+    return { isValid: false, error: "Les options du sondage doivent être uniques" };
+  }
+
+  // Vérifier selectableCount
+  if (typeof data.selectableCount !== 'number' || data.selectableCount < 1) {
+    return { isValid: false, error: "selectableCount doit être un nombre positif" };
+  }
+
+  if (data.selectableCount > data.values.length) {
+    return { isValid: false, error: "selectableCount ne peut pas être supérieur au nombre d'options" };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * API pour envoyer des sondages WhatsApp via EvolutionAPI
  */
 export async function POST(request: NextRequest) {
   try {
-    // Configuration de l'API Evolution depuis les variables d'environnement
+    // Configuration de l'API Evolution
     const serverUrl = process.env.EVOLUTION_API_SERVER;
     const instanceName = process.env.EVOLUTION_API_INSTANCE;
     const apiKey = process.env.EVOLUTION_API_KEY;
 
-    // Vérifier que les variables d'environnement sont définies
     if (!serverUrl || !instanceName || !apiKey) {
       console.error("Variables d'environnement WhatsApp manquantes");
       return NextResponse.json(
@@ -137,21 +188,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Récupérer les données de la requête
-    const data = await request.json();
+    const data: PollRequest = await request.json();
 
     // Vérifier que les données requises sont présentes
-    if (!data.phoneNumber || !data.message) {
+    if (!data.phoneNumber || !data.name || !data.values || data.selectableCount === undefined) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Données manquantes. Les champs phoneNumber et message sont requis.",
+          error: "Données manquantes. Les champs phoneNumber, name, values et selectableCount sont requis.",
         },
         { status: 400 }
       );
     }
 
-    // Utiliser la nouvelle fonction de formatage de numéro de téléphone
+    // Valider le sondage
+    const pollValidation = validatePoll(data);
+    if (!pollValidation.isValid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: pollValidation.error,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Formater le numéro de téléphone
     const phoneNumber = formatPhoneNumber(data.phoneNumber);
 
     // Vérifier si le numéro est enregistré sur WhatsApp
@@ -168,20 +230,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Construction du payload pour EvolutionAPI
+    // Construction du payload pour l'API Evolution
     const payload = {
       number: phoneNumber,
-      text: data.message,
-      // Options supplémentaires
-      delay: data.delay || 1000, // délai par défaut de 1 seconde
+      name: data.name,
+      selectableCount: data.selectableCount,
+      values: data.values,
+      delay: data.delay || 1000,
       linkPreview: data.linkPreview !== undefined ? data.linkPreview : true,
+      mentionsEveryOne: data.mentionsEveryOne || false,
+      // Ne pas inclure mentioned si le tableau est vide ou non fourni
+      ...(data.mentioned && data.mentioned.length > 0 && { mentioned: data.mentioned }),
+      // Inclure quoted si fourni
+      ...(data.quoted && { quoted: data.quoted }),
     };
 
-    console.log("Envoi de message WhatsApp:", payload);
+    console.log("Envoi de sondage WhatsApp:", {
+      ...payload,
+      values: payload.values,
+      optionCount: payload.values.length
+    });
 
-    // Appel à l'API Evolution
+    // Appel à l'API Evolution pour envoyer le sondage
     const response = await fetch(
-      `${serverUrl}/message/sendText/${instanceName}`,
+      `${serverUrl}/message/sendPoll/${instanceName}`,
       {
         method: "POST",
         headers: {
@@ -195,12 +267,12 @@ export async function POST(request: NextRequest) {
     // Vérifier la réponse
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Erreur lors de l'envoi du message WhatsApp:", errorText);
+      console.error("Erreur lors de l'envoi du sondage WhatsApp:", errorText);
 
       return NextResponse.json(
         {
           success: false,
-          error: "Échec de l'envoi du message WhatsApp",
+          error: "Échec de l'envoi du sondage WhatsApp",
           details: errorText,
         },
         { status: response.status }
@@ -212,19 +284,26 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Message WhatsApp envoyé avec succès",
+      message: "Sondage WhatsApp envoyé avec succès",
       data: responseData,
+      poll: {
+        name: data.name,
+        options: data.values,
+        selectableCount: data.selectableCount,
+        totalOptions: data.values.length
+      },
     });
+
   } catch (error) {
-    console.error("Erreur lors de l'envoi du message WhatsApp:", error);
+    console.error("Erreur lors de l'envoi du sondage WhatsApp:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Échec de l'envoi du message WhatsApp",
+        error: "Échec de l'envoi du sondage WhatsApp",
         message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 500 }
     );
   }
-}
+} 

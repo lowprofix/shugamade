@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
         // Envoi d'un message WhatsApp de confirmation
         try {
           console.log(
-            "Tentative d'envoi du message WhatsApp via API officielle Meta..."
+            "Tentative d'envoi du message WhatsApp directement via Evolution API..."
           );
 
           // Formater la date et l'heure pour le message en utilisant toZonedTime et format avec le bon fuseau horaire
@@ -226,33 +226,100 @@ export async function POST(request: NextRequest) {
           // Log du message formaté final pour débogage
           console.log("Message WhatsApp formaté final:", message);
 
-          // Appel à notre endpoint WhatsApp officiel
-          const whatsappResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/whatsapp/verify-and-send`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              phoneNumber: eventData.clientPhone,
-              message: message
-            })
-          });
+          // Configuration de l'API Evolution
+          const serverUrl = process.env.EVOLUTION_API_SERVER;
+          const instanceName = process.env.EVOLUTION_API_INSTANCE;
+          const apiKey = process.env.EVOLUTION_API_KEY;
 
-          if (!whatsappResponse.ok) {
-            const errorData = await whatsappResponse.json();
+          // Vérifier que les variables d'environnement sont définies
+          if (!serverUrl || !instanceName || !apiKey) {
+            console.error("Variables d'environnement WhatsApp manquantes");
+            throw new Error("Configuration serveur WhatsApp incomplète");
+          }
+
+          // Fonction pour formater le numéro de téléphone
+          function formatPhoneNumber(phoneNumber: string): string {
+            // Supprimer tous les espaces
+            let formattedNumber = phoneNumber.replace(/\s+/g, "");
+
+            // S'assurer que le numéro commence par un +
+            if (!formattedNumber.startsWith("+")) {
+              formattedNumber = `+${formattedNumber}`;
+            }
+
+            // Liste des pays qui utilisent un 0 comme indicateur national à supprimer
+            const countriesWithLeadingZero = [
+              "+33", // France
+              "+44", // Royaume-Uni
+              "+39", // Italie
+              "+34", // Espagne
+              "+49", // Allemagne
+              "+32", // Belgique
+              "+31", // Pays-Bas
+            ];
+
+            // Vérifier et traiter le 0 après l'indicatif pays
+            for (const countryCode of countriesWithLeadingZero) {
+              if (
+                formattedNumber.startsWith(countryCode) &&
+                formattedNumber.length > countryCode.length &&
+                formattedNumber.charAt(countryCode.length) === "0"
+              ) {
+                formattedNumber = `${countryCode}${formattedNumber.substring(
+                  countryCode.length + 1
+                )}`;
+                break;
+              }
+            }
+
+            return formattedNumber;
+          }
+
+          // Formater le numéro de téléphone
+          const phoneNumber = formatPhoneNumber(eventData.clientPhone);
+          console.log(
+            "Numéro de téléphone formaté pour WhatsApp:",
+            phoneNumber
+          );
+
+          // Construction du payload pour EvolutionAPI
+          const payload = {
+            number: phoneNumber,
+            text: message,
+            delay: 1000,
+            linkPreview: true,
+          };
+
+          console.log("Payload pour Evolution API:", payload);
+
+          // Appel direct à Evolution API
+          const evolutionResponse = await fetch(
+            `${serverUrl}/message/sendText/${instanceName}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: apiKey ?? "",
+              },
+              body: JSON.stringify(payload),
+            }
+          );
+
+          if (!evolutionResponse.ok) {
+            const errorText = await evolutionResponse.text();
             console.error(
-              "Erreur lors de l'envoi du message WhatsApp via API officielle:",
-              errorData
+              "Erreur lors de l'envoi du message WhatsApp via Evolution API:",
+              errorText
             );
             throw new Error(
-              `Erreur API WhatsApp: ${whatsappResponse.status} - ${errorData.error || 'Erreur inconnue'}`
+              `Erreur Evolution API: ${evolutionResponse.status} - ${errorText}`
             );
           }
 
-          const whatsappResult = await whatsappResponse.json();
+          const evolutionResult = await evolutionResponse.json();
           console.log(
-            "Message WhatsApp envoyé avec succès via API officielle Meta:",
-            whatsappResult
+            "Message WhatsApp envoyé avec succès via Evolution API:",
+            evolutionResult
           );
         } catch (whatsappError) {
           console.error(

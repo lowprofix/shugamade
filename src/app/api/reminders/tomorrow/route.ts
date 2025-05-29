@@ -497,7 +497,7 @@ export async function POST(request: NextRequest) {
           `Envoi du message à ${client.clientName} (${client.phoneNumber})`
         );
 
-        const whatsappResponse = await fetch(`${baseUrl}/api/whatsapp/verify-and-send`, {
+        const whatsappResponse = await fetch(`${baseUrl}/api/whatsapp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -505,13 +505,12 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({
             phoneNumber: client.phoneNumber,
             message: client.message,
-            cacheResult: true,
           }),
         });
 
         const whatsappResult = await whatsappResponse.json();
 
-        if (whatsappResult.success && whatsappResult.messageDelivered) {
+        if (whatsappResult.success) {
           console.log(`✅ Message envoyé avec succès à ${client.clientName}`);
           sentMessages.push({
             clientName: client.clientName,
@@ -520,19 +519,15 @@ export async function POST(request: NextRequest) {
             serviceName: client.serviceName,
           });
         } else {
-          let errorMessage = whatsappResult.error || "Erreur d'envoi WhatsApp";
-          if (whatsappResult.hasWhatsApp === false) {
-            errorMessage = "Numéro non enregistré sur WhatsApp";
-          }
-          
           console.error(
-            `❌ Échec d'envoi du message à ${client.clientName}: ${errorMessage}`
+            `❌ Échec d'envoi du message à ${client.clientName}: ${whatsappResult.error}`
           );
           failedMessages.push({
             clientName: client.clientName,
             phoneNumber: client.phoneNumber,
-            error: errorMessage,
-            whatsappRegistered: whatsappResult.hasWhatsApp !== false,
+            error: whatsappResult.error,
+            whatsappRegistered:
+              whatsappResult.whatsapp === false ? false : true,
           });
         }
 
@@ -615,7 +610,7 @@ export async function POST(request: NextRequest) {
               `Envoi du message à ${client.clientName} (${phoneNumber}) [Hiboutik]`
             );
 
-            const whatsappResponse = await fetch(`${baseUrl}/api/whatsapp/verify-and-send`, {
+            const whatsappResponse = await fetch(`${baseUrl}/api/whatsapp`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -623,13 +618,12 @@ export async function POST(request: NextRequest) {
               body: JSON.stringify({
                 phoneNumber: phoneNumber,
                 message: message,
-                cacheResult: true,
               }),
             });
 
             const whatsappResult = await whatsappResponse.json();
 
-            if (whatsappResult.success && whatsappResult.messageDelivered) {
+            if (whatsappResult.success) {
               console.log(
                 `✅ Message envoyé avec succès à ${client.clientName} [Hiboutik]`
               );
@@ -648,15 +642,10 @@ export async function POST(request: NextRequest) {
                 hiboutikId: hiboutikClient.id,
               });
             } else {
-              let errorMessage = whatsappResult.error || "Erreur d'envoi WhatsApp";
-              if (whatsappResult.hasWhatsApp === false) {
-                errorMessage = "Numéro non enregistré sur WhatsApp";
-              }
-              
               failedMessages.push({
                 clientName: client.clientName,
                 phoneNumber: phoneNumber,
-                error: errorMessage,
+                error: whatsappResult.error,
                 foundVia: "hiboutik",
               });
             }
@@ -678,16 +667,6 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-
-    // Envoyer un résumé compact au superviseur
-    await sendSummaryToSupervisor(
-      sentMessages.length,
-      failedMessages.length,
-      hiboutikResolvedClients.length,
-      manuallyProcessedClients.length - hiboutikResolvedClients.length,
-      formattedDate,
-      request
-    );
 
     return NextResponse.json({
       success: true,
@@ -717,64 +696,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  }
-}
-
-/**
- * Envoie un résumé compact des rappels à un numéro de supervision
- */
-async function sendSummaryToSupervisor(
-  sentCount: number, 
-  failedCount: number, 
-  hiboutikCount: number, 
-  manualCount: number,
-  date: string,
-  request: NextRequest
-) {
-  try {
-    const supervisorNumber = process.env.WHATSAPP_SUPERVISOR_NUMBER;
-    if (!supervisorNumber) {
-      console.log("Numéro de supervision non configuré, pas d'envoi de résumé");
-      return;
-    }
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   `https://${request.headers.get("host")}`;
-
-    // Créer le message de résumé compact
-    const total = sentCount + failedCount + manualCount;
-    const summary = `📊 RÉSUMÉ RAPPELS - ${date}
-
-✅ Envoyés: ${sentCount}
-❌ Échecs: ${failedCount}
-🔍 Via Hiboutik: ${hiboutikCount}
-✋ Manuel requis: ${manualCount}
-📊 Total: ${total}
-
-🕐 ${new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Lagos' })}`;
-
-    console.log("Envoi du résumé au superviseur:", supervisorNumber);
-
-    const response = await fetch(`${baseUrl}/api/whatsapp/verify-and-send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        phoneNumber: supervisorNumber,
-        message: summary,
-        cacheResult: true,
-      }),
-    });
-
-    const result = await response.json();
-    
-    if (result.success && result.messageDelivered) {
-      console.log("✅ Résumé envoyé avec succès au superviseur");
-    } else {
-      console.error("❌ Échec d'envoi du résumé:", result.error);
-    }
-  } catch (error) {
-    console.error("Erreur lors de l'envoi du résumé:", error);
   }
 }

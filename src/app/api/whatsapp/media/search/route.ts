@@ -67,24 +67,34 @@ function formatPhoneNumber(phoneNumber: string): string {
 }
 
 /**
- * Vérifie si un numéro est enregistré sur WhatsApp en utilisant l'API officielle
+ * Vérifie si un numéro est enregistré sur WhatsApp
  */
 async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
   try {
-    console.log(`Vérification du numéro WhatsApp: ${phoneNumber}`);
-    
-    // Utiliser notre endpoint de vérification intelligent
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/whatsapp/verify-and-send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phoneNumber: phoneNumber,
-        message: "Test de vérification", // Message minimal pour test
-        testOnly: true // Paramètre pour indiquer que c'est juste un test
-      })
-    });
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+
+    if (!serverUrl || !instanceName || !apiKey) {
+      console.error("Variables d'environnement WhatsApp manquantes pour la vérification de numéro");
+      return false;
+    }
+
+    const formattedNumber = formatPhoneNumber(phoneNumber);
+
+    const response = await fetch(
+      `${serverUrl}/chat/whatsappNumbers/${instanceName}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: apiKey,
+        },
+        body: JSON.stringify({
+          numbers: [formattedNumber],
+        }),
+      }
+    );
 
     if (!response.ok) {
       console.error("Erreur lors de la vérification du numéro WhatsApp");
@@ -92,13 +102,20 @@ async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
     }
 
     const data = await response.json();
-    
-    if (data.success && data.hasWhatsApp) {
-      console.log(`Le numéro ${phoneNumber} est enregistré sur WhatsApp`);
-      return true;
+
+    if (data && Array.isArray(data) && data.length > 0) {
+      const numberResult = data.find(
+        (item) =>
+          item.number === formattedNumber ||
+          item.jid?.includes(formattedNumber.substring(1))
+      );
+      if (numberResult && numberResult.exists === true) {
+        console.log(`Le numéro ${formattedNumber} est enregistré sur WhatsApp`);
+        return true;
+      }
     }
 
-    console.log(`Le numéro ${phoneNumber} n'est pas enregistré sur WhatsApp`);
+    console.log(`Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`);
     return false;
   } catch (error) {
     console.error("Erreur lors de la vérification du numéro WhatsApp:", error);
@@ -238,7 +255,7 @@ function generateProductCaption(product: ProductWithImage): string {
 }
 
 /**
- * Envoie un média via WhatsApp en utilisant l'API officielle
+ * Envoie un média via WhatsApp
  */
 async function sendSingleMedia(
   phoneNumber: string,
@@ -246,6 +263,39 @@ async function sendSingleMedia(
   delay: number = 1000
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+
+    if (!serverUrl || !instanceName || !apiKey) {
+      return {
+        success: false,
+        error: "Configuration serveur incomplète"
+      };
+    }
+
+    // Générer la caption
+    const caption = generateProductCaption(product);
+
+    // Déterminer le type MIME basé sur l'extension du fichier
+    let mimetype = "image/jpeg"; // par défaut
+    if (product.image_filename) {
+      const extension = product.image_filename.toLowerCase().split('.').pop();
+      switch (extension) {
+        case 'png':
+          mimetype = "image/png";
+          break;
+        case 'gif':
+          mimetype = "image/gif";
+          break;
+        case 'webp':
+          mimetype = "image/webp";
+          break;
+        default:
+          mimetype = "image/jpeg";
+      }
+    }
+
     // Vérifier que l'URL de l'image existe
     if (!product.image_url) {
       return {
@@ -254,31 +304,42 @@ async function sendSingleMedia(
       };
     }
 
-    // Générer la caption
-    const caption = generateProductCaption(product);
+    // Construction du payload pour l'API Evolution
+    const payload = {
+      number: phoneNumber,
+      mediatype: "image",
+      mimetype: mimetype,
+      caption: caption,
+      media: product.image_url,
+      fileName: product.image_filename || `product_${product.product_id}.jpg`,
+      delay: delay,
+      linkPreview: false,
+    };
 
-    console.log(`Envoi de média WhatsApp pour ${product.product_name} via API officielle`);
-
-    // Utiliser notre endpoint officiel pour l'envoi de médias
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/whatsapp/media`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phoneNumber: phoneNumber,
-        productId: product.product_id,
-        imageUrl: product.image_url,
-        caption: caption
-      })
+    console.log(`Envoi de média WhatsApp pour ${product.product_name}:`, {
+      ...payload,
+      media: payload.media.substring(0, 50) + "..."
     });
 
+    // Appel à l'API Evolution pour envoyer le média
+    const response = await fetch(
+      `${serverUrl}/message/sendMedia/${instanceName}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: apiKey,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error(`Erreur lors de l'envoi du média pour ${product.product_name}:`, errorData);
+      const errorText = await response.text();
+      console.error(`Erreur lors de l'envoi du média pour ${product.product_name}:`, errorText);
       return {
         success: false,
-        error: `Échec de l'envoi pour ${product.product_name}: ${errorData.error || 'Erreur inconnue'}`
+        error: `Échec de l'envoi pour ${product.product_name}: ${errorText}`
       };
     }
 
@@ -302,6 +363,22 @@ async function sendSingleMedia(
  */
 export async function POST(request: NextRequest) {
   try {
+    // Configuration de l'API Evolution
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+
+    if (!serverUrl || !instanceName || !apiKey) {
+      console.error("Variables d'environnement WhatsApp manquantes");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Configuration serveur incomplète",
+        },
+        { status: 500 }
+      );
+    }
+
     // Récupérer les données de la requête
     const data: SearchMediaRequest = await request.json();
 

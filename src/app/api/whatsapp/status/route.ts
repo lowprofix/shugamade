@@ -1,137 +1,102 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * API pour vérifier l'état de l'API officielle WhatsApp Business
+ * API pour vérifier l'état de l'instance WhatsApp Evolution API
  */
 export async function GET(request: NextRequest) {
   try {
-    // Configuration de l'API officielle WhatsApp Business
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-    const businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+    // Configuration de l'API Evolution
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
 
-    if (!phoneNumberId || !accessToken) {
+    if (!serverUrl || !instanceName || !apiKey) {
       return NextResponse.json(
         {
           success: false,
           error: "Configuration serveur incomplète",
           config: {
-            phoneNumberId: !!phoneNumberId,
-            accessToken: !!accessToken,
-            businessAccountId: !!businessAccountId,
+            serverUrl: !!serverUrl,
+            instanceName: !!instanceName,
+            apiKey: !!apiKey,
           }
         },
         { status: 500 }
       );
     }
 
-    console.log(`Vérification de l'état de l'API WhatsApp Business pour le numéro: ${phoneNumberId}`);
+    console.log(`Vérification de l'état de l'instance: ${instanceName}`);
 
-    // Vérifier les informations du numéro de téléphone
-    const phoneNumberResponse = await fetch(
-      `https://graph.facebook.com/v22.0/${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating`,
+    // Vérifier l'état de connexion de l'instance
+    const connectionResponse = await fetch(
+      `${serverUrl}/instance/connectionState/${instanceName}`,
       {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${accessToken}`,
           "Content-Type": "application/json",
+          apikey: apiKey,
         },
       }
     );
 
-    let phoneNumberData = null;
-    if (phoneNumberResponse.ok) {
-      phoneNumberData = await phoneNumberResponse.json();
+    let connectionData = null;
+    if (connectionResponse.ok) {
+      connectionData = await connectionResponse.json();
     } else {
-      const errorText = await phoneNumberResponse.text();
-      console.error("Erreur lors de la vérification du numéro de téléphone:", errorText);
+      const errorText = await connectionResponse.text();
+      console.error("Erreur lors de la vérification de l'état de connexion:", errorText);
     }
 
-    // Vérifier les informations du compte business (si disponible)
-    let businessAccountData = null;
-    if (businessAccountId) {
-      const businessResponse = await fetch(
-        `https://graph.facebook.com/v22.0/${businessAccountId}?fields=id,name,timezone_id`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (businessResponse.ok) {
-        businessAccountData = await businessResponse.json();
-      } else {
-        const errorText = await businessResponse.text();
-        console.error("Erreur lors de la vérification du compte business:", errorText);
-      }
-    }
-
-    // Test de connectivité avec un appel simple à l'API
-    const connectivityResponse = await fetch(
-      `https://graph.facebook.com/v22.0/${phoneNumberId}`,
+    // Récupérer les informations de l'instance
+    const instanceResponse = await fetch(
+      `${serverUrl}/instance/fetchInstances`,
       {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${accessToken}`,
           "Content-Type": "application/json",
+          apikey: apiKey,
         },
       }
     );
 
-    let connectivityData = null;
-    if (connectivityResponse.ok) {
-      connectivityData = await connectivityResponse.json();
+    let instanceData = null;
+    if (instanceResponse.ok) {
+      const allInstances = await instanceResponse.json();
+      instanceData = Array.isArray(allInstances) 
+        ? allInstances.find(inst => inst.instance?.instanceName === instanceName)
+        : null;
+    } else {
+      const errorText = await instanceResponse.text();
+      console.error("Erreur lors de la récupération des instances:", errorText);
     }
-
-    // Déterminer le statut global
-    const isHealthy = phoneNumberResponse.ok && connectivityResponse.ok;
-    const statusMessage = isHealthy 
-      ? "API WhatsApp Business opérationnelle" 
-      : "Problèmes détectés avec l'API WhatsApp Business";
 
     return NextResponse.json({
       success: true,
-      message: "Diagnostic de l'API WhatsApp Business",
-      status: isHealthy ? "healthy" : "unhealthy",
-      statusMessage: statusMessage,
+      message: "Diagnostic de l'instance Evolution API",
       config: {
-        phoneNumberId: phoneNumberId,
-        businessAccountId: businessAccountId || "Non configuré",
-        accessTokenPresent: !!accessToken,
-        apiVersion: "v22.0",
+        serverUrl: serverUrl,
+        instanceName: instanceName,
+        apiKeyPresent: !!apiKey,
       },
-      phoneNumber: {
-        status: phoneNumberResponse.status,
-        data: phoneNumberData,
-        isVerified: phoneNumberData?.verified_name ? true : false,
-        displayNumber: phoneNumberData?.display_phone_number || "Non disponible",
-        qualityRating: phoneNumberData?.quality_rating || "Non disponible",
+      connection: {
+        status: connectionResponse.status,
+        data: connectionData,
       },
-      businessAccount: {
-        status: businessAccountData ? 200 : (businessAccountId ? 400 : 404),
-        data: businessAccountData,
-        configured: !!businessAccountId,
-      },
-      connectivity: {
-        status: connectivityResponse.status,
-        data: connectivityData,
-        accessible: connectivityResponse.ok,
+      instance: {
+        status: instanceResponse.status,
+        data: instanceData,
       },
       timestamp: new Date().toISOString(),
     });
 
   } catch (error) {
-    console.error("Erreur lors du diagnostic de l'API WhatsApp Business:", error);
+    console.error("Erreur lors du diagnostic de l'instance:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Échec du diagnostic de l'API WhatsApp Business",
+        error: "Échec du diagnostic de l'instance",
         message: error instanceof Error ? error.message : "Erreur inconnue",
-        status: "error",
       },
       { status: 500 }
     );

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Interface pour un bouton WhatsApp (API officielle)
+ * Interface pour un bouton WhatsApp
  */
 interface WhatsAppButton {
-  type: "reply";
-  reply: {
-    id: string;
-    title: string;
-  };
+  title: string;
+  displayText: string;
+  id: string;
+  type?: "reply" | "copy" | "url" | "call" | "pix"; // Types acceptés par l'API Evolution
 }
 
 /**
@@ -19,12 +18,7 @@ interface ButtonsRequest {
   title: string;
   description?: string;
   footer?: string;
-  buttons: Array<{
-    title: string;
-    displayText?: string; // Rétrocompatibilité
-    id: string;
-    type?: string; // Rétrocompatibilité
-  }>;
+  buttons: WhatsAppButton[];
   delay?: number;
   linkPreview?: boolean;
   mentionsEveryOne?: boolean;
@@ -32,16 +26,14 @@ interface ButtonsRequest {
 }
 
 /**
- * Fonction pour formater correctement les numéros de téléphone pour l'API officielle WhatsApp
- * L'API officielle WhatsApp Business recommande fortement d'inclure le + et le code pays
+ * Fonction pour formater correctement les numéros de téléphone internationaux
+ * Réutilisée depuis les autres APIs WhatsApp
  */
 function formatPhoneNumber(phoneNumber: string): string {
-  // Supprimer tous les espaces et caractères spéciaux sauf le +
-  let formattedNumber = phoneNumber.replace(/[\s\-\(\)]/g, "");
+  let formattedNumber = phoneNumber.replace(/\s+/g, "");
 
-  // S'assurer que le numéro commence par + (recommandé par la documentation officielle)
   if (!formattedNumber.startsWith("+")) {
-    formattedNumber = "+" + formattedNumber;
+    formattedNumber = `+${formattedNumber}`;
   }
 
   const countriesWithLeadingZero = [
@@ -66,9 +58,66 @@ function formatPhoneNumber(phoneNumber: string): string {
 }
 
 /**
+ * Vérifie si un numéro est enregistré sur WhatsApp
+ */
+async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
+  try {
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+
+    if (!serverUrl || !instanceName || !apiKey) {
+      console.error("Variables d'environnement WhatsApp manquantes pour la vérification de numéro");
+      return false;
+    }
+
+    const formattedNumber = formatPhoneNumber(phoneNumber);
+
+    const response = await fetch(
+      `${serverUrl}/chat/whatsappNumbers/${instanceName}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: apiKey,
+        },
+        body: JSON.stringify({
+          numbers: [formattedNumber],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Erreur lors de la vérification du numéro WhatsApp");
+      return false;
+    }
+
+    const data = await response.json();
+
+    if (data && Array.isArray(data) && data.length > 0) {
+      const numberResult = data.find(
+        (item) =>
+          item.number === formattedNumber ||
+          item.jid?.includes(formattedNumber.substring(1))
+      );
+      if (numberResult && numberResult.exists === true) {
+        console.log(`Le numéro ${formattedNumber} est enregistré sur WhatsApp`);
+        return true;
+      }
+    }
+
+    console.log(`Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`);
+    return false;
+  } catch (error) {
+    console.error("Erreur lors de la vérification du numéro WhatsApp:", error);
+    return false;
+  }
+}
+
+/**
  * Valide la structure des boutons
  */
-function validateButtons(buttons: ButtonsRequest['buttons']): { isValid: boolean; error?: string } {
+function validateButtons(buttons: WhatsAppButton[]): { isValid: boolean; error?: string } {
   if (!Array.isArray(buttons) || buttons.length === 0) {
     return { isValid: false, error: "Au moins un bouton doit être fourni" };
   }
@@ -80,26 +129,31 @@ function validateButtons(buttons: ButtonsRequest['buttons']): { isValid: boolean
   // Vérifier que chaque bouton a les champs requis
   for (let i = 0; i < buttons.length; i++) {
     const button = buttons[i];
-    const title = button.title || button.displayText; // Support rétrocompatibilité
-    
-    if (!title || !button.id) {
+    if (!button.title || !button.displayText || !button.id) {
       return { 
         isValid: false, 
-        error: `Le bouton ${i + 1} doit avoir les champs title (ou displayText) et id` 
+        error: `Le bouton ${i + 1} doit avoir les champs title, displayText et id` 
       };
     }
 
-    if (typeof title !== 'string' || typeof button.id !== 'string') {
+    if (typeof button.title !== 'string' || typeof button.displayText !== 'string' || typeof button.id !== 'string') {
       return { 
         isValid: false, 
         error: `Le bouton ${i + 1} doit avoir des champs de type string` 
       };
     }
 
-    if (title.length > 20) {
+    if (button.title.length > 20) {
       return { 
         isValid: false, 
         error: `Le titre du bouton ${i + 1} ne peut pas dépasser 20 caractères` 
+      };
+    }
+
+    if (button.displayText.length > 20) {
+      return { 
+        isValid: false, 
+        error: `Le texte affiché du bouton ${i + 1} ne peut pas dépasser 20 caractères` 
       };
     }
   }
@@ -115,34 +169,21 @@ function validateButtons(buttons: ButtonsRequest['buttons']): { isValid: boolean
 }
 
 /**
- * Convertit les boutons au format de l'API officielle
- */
-function convertButtonsToOfficialFormat(buttons: ButtonsRequest['buttons']): WhatsAppButton[] {
-  return buttons.map(button => ({
-    type: "reply",
-    reply: {
-      id: button.id,
-      title: button.title || button.displayText || "", // Support rétrocompatibilité
-    }
-  }));
-}
-
-/**
- * API pour envoyer des boutons WhatsApp via l'API officielle WhatsApp Business
+ * API pour envoyer des boutons WhatsApp via EvolutionAPI
  */
 export async function POST(request: NextRequest) {
   try {
-    // Configuration de l'API officielle WhatsApp Business
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-    const businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+    // Configuration de l'API Evolution
+    const serverUrl = process.env.EVOLUTION_API_SERVER;
+    const instanceName = process.env.EVOLUTION_API_INSTANCE;
+    const apiKey = process.env.EVOLUTION_API_KEY;
 
-    if (!phoneNumberId || !accessToken) {
-      console.error("Variables d'environnement WhatsApp Business manquantes");
+    if (!serverUrl || !instanceName || !apiKey) {
+      console.error("Variables d'environnement WhatsApp manquantes");
       return NextResponse.json(
         {
           success: false,
-          error: "Configuration serveur incomplète. WHATSAPP_PHONE_NUMBER_ID et WHATSAPP_ACCESS_TOKEN sont requis.",
+          error: "Configuration serveur incomplète",
         },
         { status: 500 }
       );
@@ -177,63 +218,64 @@ export async function POST(request: NextRequest) {
     // Formater le numéro de téléphone
     const phoneNumber = formatPhoneNumber(data.phoneNumber);
 
-    // Convertir les boutons au format de l'API officielle
-    const officialButtons = convertButtonsToOfficialFormat(data.buttons);
+    // Vérifier si le numéro est enregistré sur WhatsApp
+    const isWhatsApp = await isWhatsAppNumber(phoneNumber);
+    if (!isWhatsApp) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Le numéro n'est pas enregistré sur WhatsApp",
+          whatsapp: false,
+          phoneNumber: phoneNumber,
+        },
+        { status: 400 }
+      );
+    }
 
-    // Construction du payload pour l'API officielle WhatsApp Business
+    // Construction du payload pour l'API Evolution
     const payload = {
-      messaging_product: "whatsapp",
-      recipient_type: "individual", // Recommandé par la documentation officielle
-      to: phoneNumber,
-      type: "interactive",
-      interactive: {
-        type: "button",
-        body: {
-          text: data.title,
-        },
-        ...(data.footer && {
-          footer: {
-            text: data.footer,
-          },
-        }),
-        action: {
-          buttons: officialButtons,
-        },
-      },
+      number: phoneNumber,
+      title: data.title,
+      description: data.description || "",
+      footer: data.footer || "",
+      buttons: data.buttons.map(button => ({
+        ...button,
+        type: button.type || "reply" // Utiliser "reply" par défaut
+      })),
+      delay: data.delay || 1000,
+      linkPreview: data.linkPreview !== undefined ? data.linkPreview : true,
+      mentionsEveryOne: data.mentionsEveryOne || false,
+      ...(data.mentioned && data.mentioned.length > 0 && { mentioned: data.mentioned }),
     };
 
-    console.log("Envoi de boutons WhatsApp via API officielle:", {
-      to: phoneNumber,
-      title: data.title,
-      buttonCount: officialButtons.length,
-      buttons: officialButtons.map(b => ({ title: b.reply.title, id: b.reply.id }))
+    console.log("Envoi de boutons WhatsApp:", {
+      ...payload,
+      buttons: payload.buttons.map(b => ({ title: b.title, id: b.id }))
     });
 
-    // URL de l'API officielle WhatsApp Business
-    const apiUrl = `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`;
-
-    // Appel à l'API officielle WhatsApp Business
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    // Appel à l'API Evolution pour envoyer les boutons
+    const response = await fetch(
+      `${serverUrl}/message/sendButtons/${instanceName}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: apiKey,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
     // Vérifier la réponse
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      const errorText = errorData ? JSON.stringify(errorData) : await response.text();
+      const errorText = await response.text();
       console.error("Erreur lors de l'envoi des boutons WhatsApp:", errorText);
 
       return NextResponse.json(
         {
           success: false,
           error: "Échec de l'envoi des boutons WhatsApp",
-          details: errorData || errorText,
-          statusCode: response.status,
+          details: errorText,
         },
         { status: response.status }
       );
@@ -246,12 +288,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Boutons WhatsApp envoyés avec succès",
       data: responseData,
-      sentButtons: data.buttons.map(b => ({ 
-        title: b.title || b.displayText, 
-        id: b.id 
-      })),
-      phoneNumber: phoneNumber,
-      businessAccountId: businessAccountId,
+      sentButtons: data.buttons.map(b => ({ title: b.title, displayText: b.displayText, id: b.id })),
     });
 
   } catch (error) {

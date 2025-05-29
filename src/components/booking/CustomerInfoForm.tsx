@@ -22,7 +22,6 @@ import {
   XCircle,
   Loader2,
   MessageSquare,
-  MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -74,6 +73,58 @@ export default function CustomerInfoForm({
 }: CustomerInfoFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] =
+    useState<WhatsAppStatus>("unchecked");
+  const [lastCheckedNumber, setLastCheckedNumber] = useState<string>("");
+
+  // Fonction pour vérifier si un numéro est enregistré sur WhatsApp
+  const checkWhatsAppNumber = useCallback(
+    async (phoneNumber: string) => {
+      // Éviter les vérifications inutiles sur des numéros vides ou déjà vérifiés
+      if (!phoneNumber.trim() || phoneNumber === lastCheckedNumber) return;
+
+      try {
+        setWhatsappStatus("checking");
+
+        // Formater le numéro de téléphone complet avec l'indicatif
+        const fullPhoneNumber =
+          customerInfo.phoneCountryCode + phoneNumber.replace(/\s+/g, "");
+
+        // Appel de l'API pour vérifier si le numéro est sur WhatsApp
+        const response = await fetch("/api/whatsapp/check", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phoneNumber: fullPhoneNumber,
+          }),
+        });
+
+        const data = await response.json();
+
+        setWhatsappStatus(data.isWhatsApp ? "available" : "unavailable");
+        setLastCheckedNumber(phoneNumber);
+      } catch (error) {
+        console.error("Erreur lors de la vérification WhatsApp:", error);
+        setWhatsappStatus("unavailable");
+      }
+    },
+    [customerInfo.phoneCountryCode, lastCheckedNumber]
+  );
+
+  // Utilisation de useEffect pour vérifier le numéro WhatsApp après un délai de saisie
+  useEffect(() => {
+    if (customerInfo.phone.length >= 9) {
+      const timer = setTimeout(() => {
+        checkWhatsAppNumber(customerInfo.phone);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    } else {
+      setWhatsappStatus("unchecked");
+    }
+  }, [customerInfo.phone, customerInfo.phoneCountryCode, checkWhatsAppNumber]);
 
   // Fonction pour calculer la durée totale des services
   const calculateTotalDuration = (): number => {
@@ -154,20 +205,33 @@ export default function CustomerInfoForm({
     }
   };
 
-  // Message informatif sur la stratégie de notification
-  const renderNotificationInfo = () => {
-    return (
-      <div className="flex items-start text-blue-600 text-xs mt-1 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-        <MessageCircle className="w-3 h-3 mr-2 mt-0.5 flex-shrink-0 text-blue-500" />
-        <div className="text-blue-700 dark:text-blue-300">
-          <p className="font-medium">Notifications intelligentes</p>
-          <p className="mt-1">
-            Nous tenterons d'abord WhatsApp, puis SMS si nécessaire. 
-            Aucune vérification préalable requise.
-          </p>
-        </div>
-      </div>
-    );
+  // Rendu du statut WhatsApp
+  const renderWhatsAppStatus = () => {
+    switch (whatsappStatus) {
+      case "checking":
+        return (
+          <div className="flex items-center text-gray-600 text-xs mt-1">
+            <Loader2 className="w-3 h-3 mr-1 animate-spin text-gray-500" />
+            Vérification WhatsApp en cours...
+          </div>
+        );
+      case "available":
+        return (
+          <div className="flex items-center text-green-600 text-xs mt-1">
+            <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
+            Numéro enregistré sur WhatsApp
+          </div>
+        );
+      case "unavailable":
+        return (
+          <div className="flex items-center text-orange-600 text-xs mt-1">
+            <XCircle className="w-3 h-3 mr-1 text-orange-500" />
+            Numéro non enregistré sur WhatsApp (SMS utilisé pour les rappels)
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -298,6 +362,8 @@ export default function CustomerInfoForm({
                   {errors.phone && (
                     <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
                   )}
+                  {/* Affichage du statut WhatsApp */}
+                  {renderWhatsAppStatus()}
                 </div>
 
                 <div className="space-y-2">
@@ -349,7 +415,13 @@ export default function CustomerInfoForm({
                     />
                   </div>
 
-                  {renderNotificationInfo()}
+                  {whatsappStatus === "unavailable" && (
+                    <div className="flex items-center text-orange-600 text-xs mt-2">
+                      <AlertCircle className="w-3 h-3 mr-1 text-orange-500" />
+                      Votre numéro n'est pas détecté sur WhatsApp. Les
+                      notifications seront envoyées par SMS.
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 mt-2 rounded-lg bg-[#ffb2dd]/10 border border-[#ffb2dd]/20">

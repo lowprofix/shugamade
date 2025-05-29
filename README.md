@@ -64,39 +64,6 @@ Les variables d'environnement suivantes sont nécessaires:
 
 - `NEXT_PUBLIC_BASE_URL` - URL de base de l'application
 - `N8N_WEBHOOK_CALENDAR_EVENTS` - URL du webhook pour récupérer les événements du calendrier
-- `WHATSAPP_PHONE_NUMBER_ID` - ID du numéro de téléphone WhatsApp Business
-- `WHATSAPP_BUSINESS_ACCOUNT_ID` - ID du compte WhatsApp Business  
-- `WHATSAPP_ACCESS_TOKEN` - Token d'accès à l'API WhatsApp Business officielle
-
-## Variables d'environnement
-
-Créez un fichier `.env.local` avec les variables suivantes :
-
-```env
-# Base de données
-DATABASE_URL="postgresql://..."
-DIRECT_URL="postgresql://..."
-
-# NextAuth
-NEXTAUTH_SECRET="your-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
-SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
-
-# n8n
-N8N_WEBHOOK_URL="https://your-n8n-instance.com/webhook/..."
-
-# WhatsApp Business API (Meta)
-WHATSAPP_PHONE_NUMBER_ID="your-phone-number-id"
-WHATSAPP_BUSINESS_ACCOUNT_ID="your-business-account-id"  
-WHATSAPP_ACCESS_TOKEN="your-access-token"
-WHATSAPP_SUPERVISOR_NUMBER="+242064123456"  # Numéro pour recevoir les résumés de rappels
-
-# Hiboutik API
-HIBOUTIK_ACCOUNT="your-account"
-HIBOUTIK_USER="your-user"
-HIBOUTIK_KEY="your-api-key"
-```
+- `EVOLUTION_API_SERVER` - URL du serveur EvolutionAPI
+- `EVOLUTION_API_INSTANCE` - Nom de l'instance WhatsApp
+- `EVOLUTION_API_KEY` - Clé API pour EvolutionAPI

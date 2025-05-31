@@ -1,13 +1,45 @@
 import { createClient } from "@supabase/supabase-js";
+import { appConfig, validateConfig } from "@/lib/config";
 
-// Créer un client Supabase utilisant les variables d'environnement
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-// Vérifier les variables d'environnement
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Les variables d'environnement Supabase sont manquantes");
+// Valider la configuration au démarrage
+const configValidation = validateConfig();
+if (!configValidation.isValid) {
+  console.error("Configuration Supabase invalide:", configValidation.errors);
 }
 
-// Exporter le client Supabase
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Créer le client Supabase avec la configuration centralisée
+export const supabase = createClient(
+  appConfig.supabase.url,
+  appConfig.supabase.anonKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  }
+);
+
+// Fonction utilitaire pour obtenir l'URL publique d'un fichier
+export function getPublicUrl(bucket: string, path: string): string {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// Fonction pour uploader un fichier
+export async function uploadFile(
+  bucket: string,
+  path: string,
+  file: File,
+  options?: { upsert?: boolean }
+) {
+  return await supabase.storage
+    .from(bucket)
+    .upload(path, file, options);
+}
+
+// Fonction pour supprimer un fichier
+export async function deleteFile(bucket: string, path: string) {
+  return await supabase.storage
+    .from(bucket)
+    .remove([path]);
+}

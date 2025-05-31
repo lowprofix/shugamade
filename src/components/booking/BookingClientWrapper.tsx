@@ -333,11 +333,51 @@ export default function BookingClientWrapper({
   const createBookingWithClientId = async (hiboutikClientId: number) => {
     const customerInfoWithHiboutik = { ...customerInfo, hiboutikClientId };
     try {
-      // Pour les services multiples
+      // Pour les services multiples (réservations de pack)
       if (isMultipleBooking && multipleBooking) {
-        // ... (logique de création de réservation multiple, comme dans confirmBooking)
-        // Appel à /api/create-multiple-bookings avec customerInfoWithHiboutik
-        // ...
+        // Préparer les données pour les réservations multiples
+        const bookingsData = multipleBooking.slots.map((slot, index) => ({
+          title: `${multipleBooking.serviceType} - Séance ${index + 1}`,
+          start: `${slot.date}T${slot.start}:00+01:00`,
+          end: `${slot.date}T${slot.end}:00+01:00`,
+          description: `Séance ${index + 1} du pack ${multipleBooking.serviceType}`,
+        }));
+
+        const multipleBookingPayload = {
+          clientName: `${customerInfoWithHiboutik.first_name} ${customerInfoWithHiboutik.last_name}`,
+          clientPhone: `${customerInfoWithHiboutik.phoneCountryCode}${customerInfoWithHiboutik.phone}`,
+          clientEmail: customerInfoWithHiboutik.email || null,
+          hiboutikClientId: hiboutikClientId.toString(),
+          packageName: `Pack ${multipleBooking.sessionCount} séances - ${multipleBooking.serviceType}`,
+          packageDescription: `Pack promotionnel de ${multipleBooking.sessionCount} séances de ${multipleBooking.serviceType}`,
+          bookings: bookingsData,
+          sendWhatsAppConfirmation: sendWhatsAppConfirmation,
+        };
+
+        console.log("Envoi des réservations multiples:", multipleBookingPayload);
+
+        const response = await fetch("/api/create-multiple-bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(multipleBookingPayload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || "Erreur lors de la création des réservations multiples"
+          );
+        }
+
+        const responseData = await response.json();
+        console.log("Réservations multiples créées avec succès:", responseData);
+
+        setBookingConfirmed(true);
+        setBookingError(null);
+        startTransition(() => {
+          setBookingStep(5);
+          setFadeOut(false);
+        });
       } else {
         // Réservation simple
         if (!selectedSlot) throw new Error("Aucun créneau sélectionné");
@@ -365,7 +405,10 @@ export default function BookingClientWrapper({
         });
         if (!response.ok)
           throw new Error("Erreur lors de la création de la réservation");
-        // ... (gérer la réponse, passage à l'étape suivante, etc.)
+        
+        const responseData = await response.json();
+        console.log("Réservation simple créée avec succès:", responseData);
+        
         setBookingConfirmed(true);
         setBookingError(null);
         startTransition(() => {
@@ -486,12 +529,82 @@ export default function BookingClientWrapper({
           hiboutikError
         );
         // Tenter de créer la réservation sans client Hiboutik
-        setBookingConfirmed(true);
-        setBookingError(null);
-        startTransition(() => {
-          setBookingStep(5);
+        try {
+          if (isMultipleBooking && multipleBooking) {
+            // Réservations multiples sans client Hiboutik
+            const bookingsData = multipleBooking.slots.map((slot, index) => ({
+              title: `${multipleBooking.serviceType} - Séance ${index + 1}`,
+              start: `${slot.date}T${slot.start}:00+01:00`,
+              end: `${slot.date}T${slot.end}:00+01:00`,
+              description: `Séance ${index + 1} du pack ${multipleBooking.serviceType}`,
+            }));
+
+            const multipleBookingPayload = {
+              clientName: `${customerInfo.first_name} ${customerInfo.last_name}`,
+              clientPhone: `${customerInfo.phoneCountryCode}${customerInfo.phone}`,
+              clientEmail: customerInfo.email || null,
+              packageName: `Pack ${multipleBooking.sessionCount} séances - ${multipleBooking.serviceType}`,
+              packageDescription: `Pack promotionnel de ${multipleBooking.sessionCount} séances de ${multipleBooking.serviceType}`,
+              bookings: bookingsData,
+              sendWhatsAppConfirmation: sendWhatsAppConfirmation,
+            };
+
+            console.log("Envoi des réservations multiples (sans client Hiboutik):", multipleBookingPayload);
+
+            const response = await fetch("/api/create-multiple-bookings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(multipleBookingPayload),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(
+                errorData.error || "Erreur lors de la création des réservations multiples"
+              );
+            }
+
+            const responseData = await response.json();
+            console.log("Réservations multiples créées avec succès (sans client Hiboutik):", responseData);
+          } else {
+            // Réservation simple sans client Hiboutik
+            if (!selectedSlot) throw new Error("Aucun créneau sélectionné");
+            const startDateTime = `${selectedSlot.date}T${selectedSlot.start}:00+01:00`;
+            const endDateTime = `${selectedSlot.date}T${selectedSlot.end}:00+01:00`;
+            
+            const response = await fetch("/api/create-booking", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: generateCombinedServiceName(),
+                start: startDateTime,
+                end: endDateTime,
+                clientName: `${customerInfo.first_name} ${customerInfo.last_name}`,
+                clientPhone: `${customerInfo.phoneCountryCode}${customerInfo.phone}`,
+                clientEmail: customerInfo.email || null,
+                locationId: selectedLocation?.id || 1,
+                sendWhatsAppConfirmation: sendWhatsAppConfirmation,
+              }),
+            });
+            
+            if (!response.ok) {
+              throw new Error("Erreur lors de la création de la réservation");
+            }
+            
+            const responseData = await response.json();
+            console.log("Réservation simple créée avec succès (sans client Hiboutik):", responseData);
+          }
+
+          setBookingConfirmed(true);
+          setBookingError(null);
+          startTransition(() => {
+            setBookingStep(5);
+            setFadeOut(false);
+          });
+        } catch (bookingError: any) {
+          setBookingError(bookingError.message || "Erreur lors de la création de la réservation");
           setFadeOut(false);
-        });
+        }
       }
     } catch (error: any) {
       setBookingError(error.message || "Erreur lors de la réservation");

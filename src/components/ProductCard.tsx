@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, ShoppingCart, X, ImageOff, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, ShoppingCart, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { OptimizedProductImage } from "@/components/OptimizedProductImage";
 
 interface ProductCardProps {
   product: Product;
@@ -21,7 +21,6 @@ export function ProductCard({
   onSelect,
   className,
 }: ProductCardProps) {
-  const [imageError, setImageError] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -66,23 +65,17 @@ export function ProductCard({
 
       {/* Image du produit */}
       <div className="relative aspect-square overflow-hidden">
-        {imageError ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-            <ImageOff className="w-12 h-12 text-gray-400" />
-          </div>
-        ) : (
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            className={cn(
-              "object-cover transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:brightness-[1.03]",
-              product.stock === 0 && "opacity-70 grayscale"
-            )}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            onError={() => setImageError(true)}
-          />
-        )}
+        <OptimizedProductImage
+          src={product.image}
+          alt={product.name}
+          className={cn(
+            "group-hover:scale-[1.03] group-hover:brightness-[1.03]",
+            product.stock === 0 && "opacity-70 grayscale"
+          )}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          quality={75}
+          placeholder="empty"
+        />
       </div>
 
       {/* Contenu du produit */}

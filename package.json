@@ -68,6 +68,9 @@
     "typescript": "^5"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": []
+    "ignoredBuiltDependencies": [],
+    "overrides": {
+      "whatwg-url": "^11.0.0"
+    }
   }
 }

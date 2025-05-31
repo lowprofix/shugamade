@@ -1,0 +1,8 @@
+# Force l'utilisation d'une version plus récente de whatwg-url
+overrides:
+  whatwg-url: "^11.0.0"
+
+# Configuration pour éviter les problèmes de hoisting
+hoist-pattern[]=*eslint*
+hoist-pattern[]=*prettier*
+shamefully-hoist=true 

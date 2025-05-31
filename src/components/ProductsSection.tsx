@@ -17,6 +17,7 @@ import { Sparkles, ShoppingCart, X, Info, Pill, Droplets } from "lucide-react";
 import { Product } from "@/lib/types";
 import { contactInfo } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import ProductsSkeleton from "@/components/skeletons/ProductsSkeleton";
 
 interface ProductsSectionProps {
   scrollToSection: (sectionId: string) => void;
@@ -76,7 +77,7 @@ export default function ProductsSection({
 
   // Nouveaux états pour gérer les produits avec stocks
   const [productsWithStock, setProductsWithStock] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Commencer par true pour afficher le skeleton dès le début
   const [error, setError] = useState<string | null>(null);
 
   // Catégories de produits
@@ -253,19 +254,6 @@ export default function ProductsSection({
           </p>
         </div>
 
-        {/* Onglets de catégorie */}
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {categories.map((category) => (
-            <CategoryTab
-              key={category.id}
-              icon={category.icon}
-              label={category.label}
-              isActive={selectedCategory === category.id}
-              onClick={() => setSelectedCategory(category.id)}
-            />
-          ))}
-        </div>
-
         {/* Afficher un message d'erreur si nécessaire */}
         {error && (
           <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
@@ -277,26 +265,38 @@ export default function ProductsSection({
           </div>
         )}
 
-        {/* Afficher un indicateur de chargement si nécessaire */}
-        {isLoading && (
-          <div className="mb-6 p-4 bg-blue-100 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-800 rounded-lg text-blue-700 dark:text-blue-300 flex items-center">
-            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-700 dark:border-blue-300 mr-3"></div>
-            <p>Mise à jour des informations de stock...</p>
-          </div>
-        )}
+        {/* Afficher le skeleton pendant le chargement ou le contenu normal */}
+        {isLoading ? (
+          <ProductsSkeleton />
+        ) : (
+          <>
+            {/* Onglets de catégorie */}
+            <div className="flex flex-wrap justify-center gap-3 mb-12">
+              {categories.map((category) => (
+                <CategoryTab
+                  key={category.id}
+                  icon={category.icon}
+                  label={category.label}
+                  isActive={selectedCategory === category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                />
+              ))}
+            </div>
 
-        {/* Grille de produits */}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
-          {getFilteredProducts().map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              isSelected={isProductSelected(product.id)}
-              onSelect={() => toggleProductSelection(product)}
-              className="animate-fade-in h-full"
-            />
-          ))}
-        </div>
+            {/* Grille de produits */}
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
+              {getFilteredProducts().map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  isSelected={isProductSelected(product.id)}
+                  onSelect={() => toggleProductSelection(product)}
+                  className="animate-fade-in h-full"
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Panier flottant */}
         {selectedProducts.length > 0 && (

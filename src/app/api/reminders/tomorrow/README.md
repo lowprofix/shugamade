@@ -30,7 +30,7 @@ Récupère et affiche les rendez-vous prévus pour demain.
   "date": "mercredi 15 novembre",
   "appointments": [
     {
-      "summary": "Réservation - Massage - Jean Dupont",
+      "summary": "Jean Dupont - Massage",
       "date": "2023-11-15T14:00:00Z",
       "time": "15:00",
       "hasDescription": true,
@@ -82,10 +82,16 @@ L'API peut extraire les numéros de téléphone depuis plusieurs formats:
 
 ## Formats des résumés d'événements
 
-Pour extraire correctement le nom du client, utilisez l'un des formats suivants:
+Pour extraire correctement le nom du client, utilisez le nouveau format:
 
+**Format recommandé (nouveau):**
+- `Nom du client - Service`
+
+**Formats legacy (anciens, encore supportés):**
 1. `Réservation - Service - Nom du client`
 2. `Réservation - Service Nom du client`
+
+**Note:** Le système supporte automatiquement les deux formats pour assurer la compatibilité pendant la transition. Les nouveaux événements utilisent le format "Nom - Service" tandis que les anciens événements avec le format "Réservation - Service - Nom" continuent de fonctionner.
 
 ## Mode test
 

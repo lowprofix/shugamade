@@ -1,46 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-/**
- * Fonction pour formater correctement les numéros de téléphone internationaux
- */
-function formatPhoneNumber(phoneNumber: string): string {
-  // Supprimer tous les espaces
-  let formattedNumber = phoneNumber.replace(/\s+/g, "");
-
-  // S'assurer que le numéro commence par un +
-  if (!formattedNumber.startsWith("+")) {
-    formattedNumber = `+${formattedNumber}`;
-  }
-
-  // Liste des pays qui utilisent un 0 comme indicateur national qui doit être supprimé
-  const countriesWithLeadingZero = [
-    "+33", // France
-    "+44", // Royaume-Uni
-    "+39", // Italie
-    "+34", // Espagne
-    "+49", // Allemagne
-    "+32", // Belgique
-    "+31", // Pays-Bas
-  ];
-
-  // Vérifier si le numéro correspond à l'un des pays listés
-  for (const countryCode of countriesWithLeadingZero) {
-    if (
-      formattedNumber.startsWith(countryCode) &&
-      formattedNumber.length > countryCode.length
-    ) {
-      // Si le caractère après l'indicatif pays est un 0, le supprimer
-      if (formattedNumber.charAt(countryCode.length) === "0") {
-        formattedNumber = `${countryCode}${formattedNumber.substring(
-          countryCode.length + 1
-        )}`;
-        break;
-      }
-    }
-  }
-
-  return formattedNumber;
-}
+import { formatPhoneNumber as formatPhoneNumberUtil } from "@/lib/phone-utils";
 
 /**
  * API pour vérifier si un numéro est enregistré sur WhatsApp
@@ -96,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Formater le numéro de téléphone
-    const phoneNumber = formatPhoneNumber(data.phoneNumber);
+    const phoneNumber = formatPhoneNumberUtil(data.phoneNumber);
 
     // Appel à l'API Evolution pour vérifier si le numéro est enregistré sur WhatsApp
     const response = await fetch(

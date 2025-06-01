@@ -1,48 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-/**
- * Fonction pour formater correctement les numéros de téléphone internationaux
- * Gère les cas spécifiques par pays, notamment le 0 initial après l'indicatif pays
- */
-function formatPhoneNumber(phoneNumber: string): string {
-  // Supprimer tous les espaces
-  let formattedNumber = phoneNumber.replace(/\s+/g, "");
-
-  // S'assurer que le numéro commence par un +
-  if (!formattedNumber.startsWith("+")) {
-    formattedNumber = `+${formattedNumber}`;
-  }
-
-  // Liste des pays qui utilisent un 0 comme indicateur national qui doit être supprimé
-  // dans un format international (la clé est l'indicatif du pays)
-  const countriesWithLeadingZero = [
-    "+33", // France
-    "+44", // Royaume-Uni
-    "+39", // Italie
-    "+34", // Espagne
-    "+49", // Allemagne
-    "+32", // Belgique
-    "+31", // Pays-Bas
-  ];
-
-  // Vérifier si le numéro correspond à l'un des pays listés
-  for (const countryCode of countriesWithLeadingZero) {
-    if (
-      formattedNumber.startsWith(countryCode) &&
-      formattedNumber.length > countryCode.length
-    ) {
-      // Si le caractère après l'indicatif pays est un 0, le supprimer
-      if (formattedNumber.charAt(countryCode.length) === "0") {
-        formattedNumber = `${countryCode}${formattedNumber.substring(
-          countryCode.length + 1
-        )}`;
-        break; // Sortir de la boucle une fois le traitement effectué
-      }
-    }
-  }
-
-  return formattedNumber;
-}
+import { detectAndFormatPhoneNumber } from "@/lib/phone-utils";
 
 /**
  * Vérifie si un numéro est enregistré sur WhatsApp
@@ -64,8 +21,11 @@ async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
       return false;
     }
 
-    // Formater le numéro de téléphone
-    const formattedNumber = formatPhoneNumber(phoneNumber);
+    // Utiliser le nouveau système intelligent de formatage
+    const phoneInfo = detectAndFormatPhoneNumber(phoneNumber);
+    const formattedNumber = phoneInfo.formatted;
+    
+    console.log(`📞 Vérification WhatsApp: ${phoneNumber} -> ${formattedNumber} (${phoneInfo.countryName})`);
 
     // Appel à l'API Evolution pour vérifier si le numéro est enregistré sur WhatsApp
     const response = await fetch(
@@ -99,13 +59,13 @@ async function isWhatsAppNumber(phoneNumber: string): Promise<boolean> {
           item.jid?.includes(formattedNumber.substring(1))
       );
       if (numberResult && numberResult.exists === true) {
-        console.log(`Le numéro ${formattedNumber} est enregistré sur WhatsApp`);
+        console.log(`✅ Le numéro ${formattedNumber} est enregistré sur WhatsApp`);
         return true;
       }
     }
 
     console.log(
-      `Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`
+      `❌ Le numéro ${formattedNumber} n'est pas enregistré sur WhatsApp`
     );
     return false;
   } catch (error) {
@@ -151,26 +111,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Utiliser la nouvelle fonction de formatage de numéro de téléphone
-    const phoneNumber = formatPhoneNumber(data.phoneNumber);
-
     // Vérifier si le numéro est enregistré sur WhatsApp
-    const isWhatsApp = await isWhatsAppNumber(phoneNumber);
+    const isWhatsApp = await isWhatsAppNumber(data.phoneNumber);
     if (!isWhatsApp) {
       return NextResponse.json(
         {
           success: false,
           error: "Le numéro n'est pas enregistré sur WhatsApp",
           whatsapp: false,
-          phoneNumber: phoneNumber,
+          phoneNumber: data.phoneNumber,
         },
         { status: 400 }
       );
     }
 
+    // Formater le numéro pour l'envoi
+    const phoneInfo = detectAndFormatPhoneNumber(data.phoneNumber);
+    const formattedPhoneNumber = phoneInfo.formatted;
+    
+    console.log(`📞 Envoi WhatsApp: ${data.phoneNumber} -> ${formattedPhoneNumber} (${phoneInfo.countryName})`);
+
     // Construction du payload pour EvolutionAPI
     const payload = {
-      number: phoneNumber,
+      number: formattedPhoneNumber,
       text: data.message,
       // Options supplémentaires
       delay: data.delay || 1000, // délai par défaut de 1 seconde

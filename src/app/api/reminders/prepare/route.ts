@@ -4,6 +4,7 @@ import { extractPhoneNumber, extractClientName } from "@/lib/reminder-utils";
 import { isPointeNoireSession, getSessionLocation } from "../../bookings/lib/locations";
 import { toZonedTime, format } from "date-fns-tz";
 import { fr } from "date-fns/locale";
+import { detectAndFormatPhoneNumber } from "@/lib/phone-utils";
 
 // Définir la constante TIMEZONE
 const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
@@ -231,10 +232,12 @@ export async function GET(request: NextRequest) {
           continue; // Passer au rendez-vous suivant
         }
 
-        // Formater le numéro de téléphone
-        const formattedPhone = phoneFromDescription.startsWith("+")
-          ? phoneFromDescription
-          : `+242${phoneFromDescription.replace(/^0+/, "")}`;
+        // Formater le numéro de téléphone avec détection intelligente du pays
+        const phoneInfo = detectAndFormatPhoneNumber(phoneFromDescription);
+        const formattedPhone = phoneInfo.formatted;
+        
+        // Log pour debug
+        console.log(`📞 Numéro détecté: ${phoneFromDescription} -> ${formattedPhone} (${phoneInfo.countryName}, confiance: ${phoneInfo.confidence})`);
 
         // Extraire le nom du service depuis le résumé
         let serviceName = "votre rendez-vous";

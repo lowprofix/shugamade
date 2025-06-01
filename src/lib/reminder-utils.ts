@@ -60,24 +60,34 @@ export function extractPhoneNumber(
 
 /**
  * Extrait un nom de client depuis le résumé de l'événement
+ * Nouveau format: "Nom - Service" (au lieu de "Réservation - Service - Nom")
  */
 export function extractClientName(summary: string | undefined | null): string {
   if (!summary) return "Client";
 
-  // Format: "Réservation - Service - Nom"
+  // Nouveau format: "Nom - Service"
   const parts = summary.split("-");
-  if (parts.length >= 3) {
-    return parts[2].trim();
-  }
-
-  // Format: "Réservation - Service Nom"
-  if (parts.length === 2) {
-    const servicePart = parts[1].trim();
-    const words = servicePart.split(" ");
-
-    // Si le service est composé de plusieurs mots, les derniers pourraient être le nom
-    if (words.length > 1) {
-      return words.slice(1).join(" ").trim();
+  if (parts.length >= 2) {
+    // Le nom du client est maintenant la première partie
+    const clientName = parts[0].trim();
+    
+    // Vérifier que ce n'est pas l'ancien format qui commence par "Réservation"
+    if (clientName.toLowerCase() === "réservation") {
+      // Ancien format: "Réservation - Service - Nom"
+      if (parts.length >= 3) {
+        return parts[2].trim();
+      }
+      // Ancien format: "Réservation - Service Nom"
+      if (parts.length === 2) {
+        const servicePart = parts[1].trim();
+        const words = servicePart.split(" ");
+        if (words.length > 1) {
+          return words.slice(1).join(" ").trim();
+        }
+      }
+    } else {
+      // Nouveau format: retourner le nom (première partie)
+      return clientName;
     }
   }
 

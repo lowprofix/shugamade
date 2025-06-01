@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { toZonedTime, format } from "date-fns-tz";
 import { fr } from "date-fns/locale";
+import { detectAndFormatPhoneNumber, getPhoneNumberInfo } from "@/lib/phone-utils";
 
 // Définir la constante TIMEZONE
 const TIMEZONE = "Africa/Lagos"; // UTC+1, Afrique de l'Ouest
@@ -104,24 +105,34 @@ function extractPhoneNumber(
 
 /**
  * Extrait un nom de client depuis le résumé de l'événement
+ * Nouveau format: "Nom - Service" (au lieu de "Réservation - Service - Nom")
  */
 function extractClientName(summary: string | undefined | null): string {
   if (!summary) return "Client";
 
-  // Format: "Réservation - Service - Nom"
+  // Nouveau format: "Nom - Service"
   const parts = summary.split("-");
-  if (parts.length >= 3) {
-    return parts[2].trim();
-  }
-
-  // Format: "Réservation - Service Nom"
-  if (parts.length === 2) {
-    const servicePart = parts[1].trim();
-    const words = servicePart.split(" ");
-
-    // Si le service est composé de plusieurs mots, les derniers pourraient être le nom
-    if (words.length > 1) {
-      return words.slice(1).join(" ").trim();
+  if (parts.length >= 2) {
+    // Le nom du client est maintenant la première partie
+    const clientName = parts[0].trim();
+    
+    // Vérifier que ce n'est pas l'ancien format qui commence par "Réservation"
+    if (clientName.toLowerCase() === "réservation") {
+      // Ancien format: "Réservation - Service - Nom"
+      if (parts.length >= 3) {
+        return parts[2].trim();
+      }
+      // Ancien format: "Réservation - Service Nom"
+      if (parts.length === 2) {
+        const servicePart = parts[1].trim();
+        const words = servicePart.split(" ");
+        if (words.length > 1) {
+          return words.slice(1).join(" ").trim();
+        }
+      }
+    } else {
+      // Nouveau format: retourner le nom (première partie)
+      return clientName;
     }
   }
 
@@ -413,10 +424,12 @@ export async function POST(request: NextRequest) {
           continue; // Passer au rendez-vous suivant
         }
 
-        // Formater le numéro de téléphone
-        const formattedPhone = phoneFromDescription.startsWith("+")
-          ? phoneFromDescription
-          : `+242${phoneFromDescription.replace(/^0+/, "")}`;
+        // Formater le numéro de téléphone avec détection intelligente du pays
+        const phoneInfo = detectAndFormatPhoneNumber(phoneFromDescription);
+        const formattedPhone = phoneInfo.formatted;
+        
+        // Log pour debug
+        console.log(`📞 Numéro détecté: ${phoneFromDescription} -> ${formattedPhone} (${phoneInfo.countryName}, confiance: ${phoneInfo.confidence})`);
 
         // Extraire le nom du service depuis le résumé
         let serviceName = "votre rendez-vous";
@@ -566,10 +579,11 @@ export async function POST(request: NextRequest) {
         const hiboutikClient = await searchClientInHiboutik(client.clientName);
 
         if (hiboutikClient && hiboutikClient.customers_phone) {
-          // Format du téléphone: s'assurer qu'il a le préfixe +242
-          const phoneNumber = hiboutikClient.customers_phone.startsWith("+")
-            ? hiboutikClient.customers_phone
-            : `+242${hiboutikClient.customers_phone.replace(/^0+/, "")}`;
+          // Format du téléphone avec détection intelligente du pays
+          const hiboutikPhoneInfo = detectAndFormatPhoneNumber(hiboutikClient.customers_phone);
+          const phoneNumber = hiboutikPhoneInfo.formatted;
+          
+          console.log(`📞 Numéro Hiboutik détecté: ${hiboutikClient.customers_phone} -> ${phoneNumber} (${hiboutikPhoneInfo.countryName})`);
 
           console.log(
             `✅ Client ${client.clientName} trouvé dans Hiboutik avec le numéro ${phoneNumber}`

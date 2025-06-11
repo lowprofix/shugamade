@@ -93,7 +93,7 @@ export function ProductCard({
           {product.description}
         </div>
 
-        {product.description.length > 150 && (
+        {product.description && product.description.length > 150 && (
           <button
             onClick={(e) => {
               e.stopPropagation();

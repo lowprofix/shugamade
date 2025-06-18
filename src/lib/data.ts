@@ -39,6 +39,39 @@ export interface PromoPackage {
   benefits: string[];
 }
 
+export interface CustomPackageItem {
+  type: "service" | "promoService" | "promoPackage";
+  id: number;
+  name: string;
+  price: string;
+  originalPrice?: string; // Prix unitaire pour les forfaits
+  quantity: number;
+  sessions?: number; // Nombre de séances pour les forfaits
+  option?: string; // Pour les promoPackages (ex: "Tempes", "Tête entière")
+}
+
+export interface CustomPackage {
+  id: string;
+  name: string;
+  items: CustomPackageItem[];
+  totalPrice: number;
+  originalTotalPrice: number;
+  savings: number;
+  description?: string;
+  schedulingPlan?: CustomPackageSchedule[]; // Plan de planification pour les services
+}
+
+export interface CustomPackageSchedule {
+  serviceId: number;
+  serviceName: string;
+  sessionNumber: number; // Numéro de la séance (1, 2, 3, etc.)
+  canBeCombinedWith?: number[]; // IDs des services qui peuvent être combinés le même jour
+  minimumIntervalDays?: number; // Intervalle minimum en jours entre les séances
+  isFlexible?: boolean; // Si la planification est flexible
+  priority: number; // Priorité de planification (1 = le plus prioritaire)
+  isScheduled?: boolean; // Indique si cette séance a déjà été planifiée
+}
+
 export interface Product {
   id: number;
   hiboutikId?: number; // ID du produit dans le système Hiboutik
@@ -108,7 +141,7 @@ export const services: Service[] = [
     id: 14,
     name: "Séance Boost",
     price: "20 000 FCFA",
-    duration: "30 min",
+    duration: "60 min",
     description:
       "La séance se compose de la luminothérapie de l'électrothérapie et du massage crânien.",
     color: "brand",
@@ -118,13 +151,13 @@ export const services: Service[] = [
       "Traitement par électrothérapie",
       "Massage crânien du cuir chevelu",
     ],
-    durationMinutes: 30,
+    durationMinutes: 60,
   },
   {
     id: 2,
     name: "Hairneedling (Tempes)",
     price: "35 000 FCFA",
-    duration: "45 min",
+    duration: "60 min",
     description:
       "Traitement spécifique pour les zones temporales avec notre technique de micro-needling et sérums naturels.",
     color: "pink",
@@ -133,7 +166,7 @@ export const services: Service[] = [
       "Traitement par micro-needling",
       "Application de sérums naturels",
     ],
-    durationMinutes: 45,
+    durationMinutes: 60,
   },
   {
     id: 3,
@@ -161,7 +194,7 @@ export const promoServices: Service[] = [
     id: 401,
     name: "Forfait 4 séances (Tempes)",
     price: "135 000 FCFA",
-    duration: "4 x 45 min",
+    duration: "4 x 60 min",
     isPromo: true,
     color: "pink",
     includes: [
@@ -169,7 +202,7 @@ export const promoServices: Service[] = [
       "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
       "Diagnostic capillaire offert (valeur 10 000 FCFA)",
     ],
-    durationMinutes: 45,
+    durationMinutes: 60,
   },
   {
     id: 402,
@@ -189,7 +222,7 @@ export const promoServices: Service[] = [
     id: 404,
     name: "Forfait 6 séances (Tempes)",
     price: "190 000 FCFA",
-    duration: "6 x 45 min",
+    duration: "6 x 60 min",
     isPromo: true,
     color: "pink",
     includes: [
@@ -197,7 +230,7 @@ export const promoServices: Service[] = [
       "Kit SHUGAMADE offert (valeur 12 500 FCFA)",
       "Diagnostic capillaire offert (valeur 10 000 FCFA)",
     ],
-    durationMinutes: 45,
+    durationMinutes: 60,
   },
   {
     id: 405,
@@ -217,21 +250,21 @@ export const promoServices: Service[] = [
     id: 406,
     name: "Forfait Boost 4 séances",
     price: "80 000 FCFA",
-    duration: "4 x 30 min",
+    duration: "4 x 60 min",
     isPromo: true,
     color: "pink",
     includes: ["Massage crânien", "Luminothérapie", "Électrothérapie"],
-    durationMinutes: 30,
+    durationMinutes: 60,
   },
   {
     id: 407,
     name: "Forfait Boost 6 séances",
     price: "120 000 FCFA",
-    duration: "6 x 30 min",
+    duration: "6 x 60 min",
     isPromo: true,
     color: "teal",
     includes: ["Massage crânien", "Luminothérapie", "Électrothérapie"],
-    durationMinutes: 30,
+    durationMinutes: 60,
   },
 ];
 

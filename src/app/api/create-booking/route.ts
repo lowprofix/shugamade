@@ -216,8 +216,8 @@ export async function POST(request: NextRequest) {
             `💰 Acompte\n` +
             `• Un acompte de 5 000 FCFA est requis pour confirmer définitivement votre réservation.\n` +
             `• Modes de paiement acceptés :\n` +
-            `  - Mobile Money: +242 06 597 56 23\n` +
-            `  - Airtel Money: +242 05 092 89 99\n\n` +
+            `  - Mobile Money: 06 536 67 16\n\n` +
+          `  - Code Marchand: 999827\n\n` +
             `L'accompte sera bien entendu déduit du montant total de la prestation.\n\n` +
             `À très bientôt !\n\n` +
             `Eunice – SHUGAMADE\n` +

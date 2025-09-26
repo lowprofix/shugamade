@@ -289,7 +289,7 @@ export default function BookingConfirmation({
       pdf.setFontSize(12);
       const acompteText =
         "Pour confirmer votre réservation, veuillez verser un acompte de 5 000 FCFA" +
-        " via MoMo au 06 597 56 23 ou via Airtel au 05 092 89 99.";
+        " via MoMo au 06 536 67 16 ou via Code Marchand 999827.";
 
       // Wrap le texte pour qu'il tienne dans la largeur
       const splitAcompte = pdf.splitTextToSize(acompteText, pdfWidth - 40);
@@ -625,7 +625,7 @@ export default function BookingConfirmation({
               </h5>
               <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
                 Pour confirmer votre réservation, veuillez verser un acompte de
-                5 000 FCFA via MoMo au 06 597 56 23 ou via Airtel au 05 092 89
+                5 000 FCFA via MoMo au 06 536 67 16 ou via Code Marchand 999827.
                 99.
               </p>
               <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
@@ -699,8 +699,8 @@ export default function BookingConfirmation({
             Pour confirmer définitivement votre réservation, veuillez verser un
             acompte de{" "}
             <span className="font-medium text-[#ffb2dd]">5 000 FCFA</span> via
-            MoMo au <span className="font-medium">06 597 56 23</span> ou via
-            Airtel au <span className="font-medium">05 092 89 99</span>.
+            MoMo au <span className="font-medium">06 536 67 16</span> ou via
+            Code Marchand au <span className="font-medium">999827</span>.
           </p>
           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">
             Mentionnez le numéro{" "}
